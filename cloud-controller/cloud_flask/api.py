@@ -3,6 +3,10 @@ import json
 import time
 
 import requests
+
+from pubnub.pnconfiguration import PNConfiguration
+from pubnub.pubnub import PubNub
+
 from flask import Blueprint
 from flask import current_app as app
 from flask import (flash, g, jsonify, redirect, render_template, request,
@@ -13,12 +17,13 @@ from .db import find_user_by_amazon_id, find_things_by_user_id, find_thing_by_en
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
+
 def ensure_amazon_user_id_exists(view):
     @functools.wraps(view)
     def wrapped_view(**kwargs):
         req_json = request.get_json()
         app.logger.debug('[ensure_amazon_user_id] json: ' + json.dumps(req_json))
-        
+
         if 'accessToken' not in req_json:
             app.logger.debug('[ensure_amazon_user_id] access_token_not_provided')
             return jsonify({'error': 'access_token_not_provided'}), 400
@@ -70,6 +75,7 @@ def ensure_thing_related_to_user(view):
 
     return wrapped_view
 
+
 @bp.route('/discover', methods=['POST'])
 @ensure_amazon_user_id_exists
 def discover():
@@ -80,26 +86,37 @@ def discover():
 @ensure_amazon_user_id_exists
 @ensure_thing_related_to_user
 def power(command):
-    # TODO find pubnub key and call rpi-controller-api
+    pubnub = _create_pubnub()
     if command == 'TurnOn':
+        pubnub.publish().channel('alexa').message({"requester": "Alexa", "device": g.endpoint_id, "power": "on"}).sync()
         result = 'ON'
     elif command == 'TurnOff':
+        pubnub.publish().channel('alexa').message({"requester": "Alexa", "device": g.endpoint_id, "power": "off"}).sync()
         result = 'OFF'
     else:
-        raise ValueError('Unsupported command: ' + command)
+        return jsonify({'error': 'unsupported_command'}), 400
 
-    return jsonify({'result': result, 'time': get_utc_timestamp()})
+    return jsonify({'result': result, 'time': _get_utc_timestamp()})
 
 
 @bp.route('/input/<source>', methods=['POST'])
 @ensure_amazon_user_id_exists
 @ensure_thing_related_to_user
 def input(source):
-    # TODO find pubnub key and call rpi-controller-api
+    pubnub = _create_pubnub()
+    pubnub.publish().channel('alexa').message({"requester": "Alexa", "device": g.endpoint_id, "source": source}).sync()
     result = source
 
-    return jsonify({'result': result, 'time': get_utc_timestamp()})
+    return jsonify({'result': result, 'time': _get_utc_timestamp()})
 
 
-def get_utc_timestamp(seconds=None):
+def _create_pubnub():
+    pnconfig = PNConfiguration()
+    pnconfig.publish_key = app.config['PUBNUB_PUB_KEY']
+    pnconfig.subscribe_key = app.config['PUBNUB_SUB_KEY']
+    pnconfig.ssl = True
+    return PubNub(pnconfig)
+
+
+def _get_utc_timestamp(seconds=None):
     return time.strftime("%Y-%m-%dT%H:%M:%S.00Z", time.gmtime(seconds))

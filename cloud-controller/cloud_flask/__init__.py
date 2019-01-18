@@ -12,6 +12,8 @@ def create_app(test_config=None):
         SECRET_KEY='dev',
         AMAZON_CLIENT_ID='client_id',
         AMAZON_CLIENT_SECRET='client_secret',
+        PUBNUB_PUB_KEY='pub_key',
+        PUBNUB_SUB_KEY='sub_key',
         DATABASE=os.path.join(app.instance_path, 'cloud-controller.sqlite'),
     )
     if test_config is None:
