@@ -1,12 +1,6 @@
-import json
-import uuid
-from typing import Any, Dict
-
-from error_type import ErrorType
-
 
 def build_endpoint(endpoint):
-    capabilities = [build_capability(cb, props) for cb, props in endpoint['capabilities'].items()]
+    capabilities = [_build_capability(cb, props) for cb, props in endpoint['capabilities'].items()]
     return {
         "endpointId": endpoint['endpointId'],
         "manufacturerName": endpoint['manufacturerName'],
@@ -24,7 +18,7 @@ def build_endpoint(endpoint):
     }
 
 
-def build_capability(cb, props):
+def _build_capability(cb, props):
     if cb == 'Alexa.PowerController' or cb == 'Alexa.Speaker' or cb == 'Alexa.EndpointHealth':
         return {
             "type": "AlexaInterface",

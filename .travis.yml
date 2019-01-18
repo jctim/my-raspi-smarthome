@@ -1,0 +1,16 @@
+language: python
+dist: xenial
+python:
+  - 3.7.2
+install:
+  - pip install mypy==0.650
+env:
+  - PROJ_DIR=raspi-cloud-controller APP_DIR=cloud_flask MYPY_CMD="mypy --ignore-missing-imports -p $APP_DIR" DEPLOY=docker
+  - PROJ_DIR=raspi-alexa-lambda     APP_DIR=.           MYPY_CMD="mypy --ignore-missing-imports ."           DEPLOY=lambda
+script: cd $PROJ_DIR && pip install -r requirements.txt && $MYPY_CMD
+after_success:
+  - test $DEPLOY = "docker" && docker build -t jctim/$PROJ_DIR:latest .
+  - test $DEPLOY = "docker" && docker tag jctim/$PROJ_DIR:latest jctim/$PROJ_DIR:travis-$TRAVIS_BUILD_NUMBER
+  - test $DEPLOY = "docker" && echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+  - test $DEPLOY = "docker" && docker push jctim/$PROJ_DIR
+  - test 
