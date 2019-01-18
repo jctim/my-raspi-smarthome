@@ -2,15 +2,49 @@ language: python
 dist: xenial
 python:
   - 3.7.2
+env:
+  matrix:
+    - PROJ_DIR=raspi-cloud-controller MYPY_CMD="mypy --ignore-missing-imports -p cloud_flask"
+    - PROJ_DIR=raspi-alexa-lambda     MYPY_CMD="mypy --ignore-missing-imports ."
+  # global:
+    # - secure: p8DIvpL/7wrxFumjEHwa6oVB/rthtjrudoEsk/I5rGEytApxpVTeftJWxBrXT1+vvGymtntt38KutI8b9gtXoz3Nx/+WTZwWuA3kiU1AH37nnxd/vNcn2CQ4HLky4MfiNLF+BmEORwSvo5KN0zB+ui+r1+HMDLUTqEQMrwP4KYAUsMHRYalTd/zhGoX3ErOBOHiVhYHk7zFDQYTdGW7MONWmXhcXVv+qANUUTOwVXPOSPw+UvfvvTTI/dcyGogG6dTINkvY/nk7CXM6NL7imqWnJwFcOmTldnUo0w5ovZLzTvJONcHt+JyFZLail05u6eFEix4A+NyuPgHpjhedY/PNgzIyyowD+etVdxXXBa7J7ZjRK35Mvh1868BLSKks1NZOFmla7A3BTS+GNjaV4l9gbdECc9c6F7L9OV3P4Hn618r16QQdfVMiYtBeDJ6JFb94g99nJMCnDDfkfe4pJUK7in5D8wyLKSZXda4pG3bMGoAQWRJv4IaSe5BjbWF4rOJJ76fEczB9umFtEiZxdpnnwh+P9DB+YpsNL33ScjartF3cjMdYD4vAQmHeQdwV+L83PfdzHxL8IYN5K1TlTqPyZr08MUuqqqScJhIAM5A55Q/42doeUK2h7EkoObUyq2+4oDA5QN5Rd1opXVuDQrxk179am9JmS04QSZy9UREE=
+# befre_install:
 install:
   - pip install mypy==0.650
-env:
-  - PROJ_DIR=raspi-cloud-controller APP_DIR=cloud_flask MYPY_CMD="mypy --ignore-missing-imports -p $APP_DIR" DEPLOY=docker
-  - PROJ_DIR=raspi-alexa-lambda     APP_DIR=.           MYPY_CMD="mypy --ignore-missing-imports ."           DEPLOY=lambda
-script: cd $PROJ_DIR && pip install -r requirements.txt && $MYPY_CMD
-after_success:
-  - test $DEPLOY = "docker" && docker build -t jctim/$PROJ_DIR:latest .
-  - test $DEPLOY = "docker" && docker tag jctim/$PROJ_DIR:latest jctim/$PROJ_DIR:travis-$TRAVIS_BUILD_NUMBER
-  - test $DEPLOY = "docker" && echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-  - test $DEPLOY = "docker" && docker push jctim/$PROJ_DIR
-  - test 
+before_script: cd $PROJ_DIR && pip install -r requirements.txt
+script: "$MYPY_CMD"
+# after_script:
+jobs:
+  include:
+    # - stage: test
+      # script: cd $PROJ_DIR && pip install -r requirements.txt && $MYPY_CMD
+    - stage: build (and deploy) docker image
+      env: PROJ_DIR=raspi-cloud-controller
+      before_script: cd $PROJ_DIR
+      script:
+        - docker build -t jctim/raspi-cloud-controller:latest .
+        - docker tag jctim/raspi-cloud-controller:latest jctim/raspi-cloud-controller:travis-$TRAVIS_BUILD_NUMBER
+        - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+      deploy:
+        - provider: script
+          skip_cleanup: true
+          script: docker push jctim/raspi-cloud-controller
+    - stage: restart service
+      addons:
+        ssh_known_hosts:
+          secure: "Gv4OMxsA9buyRyg8SbtvjwF7lMmnFREXSGoAVzdTVy9QKoYtnZYC9q6VRaQtr10dpZS8w0RBQEKl/6KKebBbf81VtwONBXMANXJCageUPWpHHZ+uap9hEV42/88JdY00X2M5zZTfE5alnd1IcwLCMhN9Ky9dI9saUWv9q3NkakriTzDsZLYM/vFFLEQL7doj9WMgV7XqPanjjj00VGtbOYdVG6/2u2gSqA/EWSqrJlhaQ4wpNZSMhddDUL/LA76k+DvFAaCrbrRbvAYARY6YAJTkeCBmmJKHIkS/O5/5ZitNEX9ice0QP2JQ6TW15W2oZe1pllUggmy3djG7cnTdtTKmxI/IdLl8LBvIf+M5towxtux0I70U3DV0FctHmnDgpes9cMGZa0Lcg2b5WNf7K6hogUzY4mYlO8ys9Dh3ejJSIUWOvdC/IkqbKrG9wB0blbwxORoHZ701dcrkPXalhRyfIfJmIpuWS4EzgykoMeSqMplVmGfx63vcQO3R0L/SYEMxAjS2o+OlqeN0qEBYEX2Fbx0GA3yDQScdekn9l+kEH8ke7htJwK2XAtqSmE/y2dqf86IheqoBz98ddvLlvNtIn6yFGCv9muam4MGAImbeqnZQ0pa34qX0v28b7jnMMSGn6YnwtJ4sv0MVG7kTwKx56XUlbByYdoQLljI7lSw="
+      env: PROJ_DIR=raspi-cloud-controller
+      before_script: cd $PROJ_DIR
+      script:
+        - openssl aes-256-cbc -K $encrypted_0d630086225e_key -iv $encrypted_0d630086225e_iv -in ../deploy_rsa.enc -out /tmp/deploy_rsa -d
+        - eval "$(ssh-agent -s)"
+        - chmod 600 /tmp/deploy_rsa
+        - ssh-add /tmp/deploy_rsa
+        - ssh $SSH_USER@$SSH_HOST "sudo systemctl restart raspi-cloud-controller.service"
+    # - stage: deploy lambda
+    #   env: PROJ_DIR=raspi-alexa-lambda
+    #   before_script: cd $PROJ_DIR
+    #   script:
+    #     - openssl aes-256-cbc -K $encrypted_0d630086225e_key -iv $encrypted_0d630086225e_iv -in ../deploy_rsa.enc -out /tmp/deploy_rsa -d
+    #     - chmod 600 /tmp/deploy_rsa
+    #     - ssh -i /tmp/deploy_rsa $SSH_USER@$SSH_HOST "sudo systemctl restart raspi-cloud-controller.service"
