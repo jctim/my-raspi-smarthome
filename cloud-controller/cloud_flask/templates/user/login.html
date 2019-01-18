@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+
+{% block header %}
+<h1>{% block title %}Log In{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+<!-- Amazon-related scripts -->
+<a href="#" id="LoginWithAmazon">
+  <img border="0" alt="Login with Amazon" src="https://images-na.ssl-images-amazon.com/images/G/01/lwa/btnLWA_gold_156x32.png"
+    width="156" height="32" />
+</a>
+
+<div id="amazon-root"></div>
+
+<script type="text/javascript">
+  window.onAmazonLoginReady = function () {
+    amazon.Login.setClientId('{{ config["AMAZON_CLIENT_ID"] }}');
+  };
+
+  (function (d) {
+    var a = d.createElement('script');
+    a.type = 'text/javascript';
+    a.async = true;
+    a.id = 'amazon-login-sdk';
+    a.src = 'https://assets.loginwithamazon.com/sdk/na/login1.js';
+    d.getElementById('amazon-root').appendChild(a);
+  })(document);
+</script>
+
+<script type="text/javascript">
+  document.getElementById('LoginWithAmazon').onclick = function () {
+    options = { scope: 'profile', response_type: 'code' };
+    amazon.Login.authorize(options,
+      '***REMOVED***/user/handle_login');
+    return false;
+  };
+</script>
+
+
+{% endblock %}

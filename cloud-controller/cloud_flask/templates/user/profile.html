@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block header %}
+<h1>{% block title %}Your profile{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+{% if g.user %}
+<form method="post">
+    <label for="email">Email</label>
+    <input name="email" id="email" value="{{ g.user['email'] }}" disabled>
+    
+    <label for="amazon_id">Amazon ID</label>
+    <input name="amazon_id" id="amazon_id" value="{{ g.user['amazon_id'] }}" disabled>
+
+    <label for="pubnub_publish_key">PubNub Publish Key</label>
+    <input name="pubnub_publish_key" id="pubnub_publish_key" value="{{ g.user['pubnub_publish_key'] }}">
+
+    <input type="submit" value="Update">
+  </form>
+{% endif %}
+{% endblock %}
