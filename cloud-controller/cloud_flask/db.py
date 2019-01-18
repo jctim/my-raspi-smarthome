@@ -60,13 +60,14 @@ def create_or_update_user(email: str, amazon_id: str) -> int:
     return user_id
 
 
-def update_user_with_pubnub(user_id: int, pubnub_publish_key: str) -> int:
+def update_user_with_pubnub(user_id: int, pubnub_publish_key: str, pubnub_subscribe_key: str) -> int:
     db = get_db()
     user = find_user_by_id(user_id)
     if user is None:
         raise ValueError('User not found by id ' + user_id)
     else:
-        db.execute('UPDATE user SET pubnub_publish_key = ? WHERE id = ?', (pubnub_publish_key, user_id))
+        db.execute('UPDATE user SET pubnub_publish_key = ?, pubnub_subscribe_key = ? WHERE id = ?',
+                   (pubnub_publish_key, pubnub_subscribe_key, user_id))
 
     db.commit()
     return user['id']

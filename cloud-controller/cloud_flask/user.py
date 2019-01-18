@@ -102,8 +102,9 @@ def profile():
     if request.method == 'POST':
         user_id = g.user['id']
         pubnub_publish_key = request.form['pubnub_publish_key']
+        pubnub_subscribe_key = request.form['pubnub_subscribe_key']
         
-        update_user_with_pubnub(user_id, pubnub_publish_key)
+        update_user_with_pubnub(user_id, pubnub_publish_key, pubnub_subscribe_key)
         g.user = find_user_by_id(user_id)
 
     return render_template('user/profile.html')
