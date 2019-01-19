@@ -6,18 +6,12 @@ env:
   matrix:
     - PROJ_DIR=raspi-cloud-controller MYPY_CMD="mypy --ignore-missing-imports -p cloud_flask"
     - PROJ_DIR=raspi-alexa-lambda     MYPY_CMD="mypy --ignore-missing-imports ."
-  # global:
-    # - secure: p8DIvpL/7wrxFumjEHwa6oVB/rthtjrudoEsk/I5rGEytApxpVTeftJWxBrXT1+vvGymtntt38KutI8b9gtXoz3Nx/+WTZwWuA3kiU1AH37nnxd/vNcn2CQ4HLky4MfiNLF+BmEORwSvo5KN0zB+ui+r1+HMDLUTqEQMrwP4KYAUsMHRYalTd/zhGoX3ErOBOHiVhYHk7zFDQYTdGW7MONWmXhcXVv+qANUUTOwVXPOSPw+UvfvvTTI/dcyGogG6dTINkvY/nk7CXM6NL7imqWnJwFcOmTldnUo0w5ovZLzTvJONcHt+JyFZLail05u6eFEix4A+NyuPgHpjhedY/PNgzIyyowD+etVdxXXBa7J7ZjRK35Mvh1868BLSKks1NZOFmla7A3BTS+GNjaV4l9gbdECc9c6F7L9OV3P4Hn618r16QQdfVMiYtBeDJ6JFb94g99nJMCnDDfkfe4pJUK7in5D8wyLKSZXda4pG3bMGoAQWRJv4IaSe5BjbWF4rOJJ76fEczB9umFtEiZxdpnnwh+P9DB+YpsNL33ScjartF3cjMdYD4vAQmHeQdwV+L83PfdzHxL8IYN5K1TlTqPyZr08MUuqqqScJhIAM5A55Q/42doeUK2h7EkoObUyq2+4oDA5QN5Rd1opXVuDQrxk179am9JmS04QSZy9UREE=
-# befre_install:
 install:
   - pip install mypy==0.650
 before_script: cd $PROJ_DIR && pip install -r requirements.txt
 script: "$MYPY_CMD"
-# after_script:
 jobs:
   include:
-    # - stage: test
-      # script: cd $PROJ_DIR && pip install -r requirements.txt && $MYPY_CMD
     - stage: build (and deploy) docker image
       env: PROJ_DIR=raspi-cloud-controller
       before_script: cd $PROJ_DIR
@@ -41,10 +35,19 @@ jobs:
         - chmod 600 /tmp/deploy_rsa
         - ssh-add /tmp/deploy_rsa
         - ssh $SSH_USER@$SSH_HOST "sudo systemctl restart raspi-cloud-controller.service"
-    # - stage: deploy lambda
-    #   env: PROJ_DIR=raspi-alexa-lambda
-    #   before_script: cd $PROJ_DIR
-    #   script:
-    #     - openssl aes-256-cbc -K $encrypted_0d630086225e_key -iv $encrypted_0d630086225e_iv -in ../deploy_rsa.enc -out /tmp/deploy_rsa -d
-    #     - chmod 600 /tmp/deploy_rsa
-    #     - ssh -i /tmp/deploy_rsa $SSH_USER@$SSH_HOST "sudo systemctl restart raspi-cloud-controller.service"
+    - stage: deploy lambda
+      env: PROJ_DIR=raspi-alexa-lambda
+      before_script: cd $PROJ_DIR
+      script: skip
+      deploy:
+        - provider: lambda
+          function_name: "MyRaspberryPi-SmartHome-Lambda"
+          region: "us-east-1"
+          role: "arn:aws:iam::881012516071:role/MyRaspberryPi-Lambda"
+          runtime: "python3.7"
+          module_name: "lambda_function"
+          handler_name: "lambda_handler"
+          access_key_id:
+            secure: "pLm5sDgr7zEww4OSwTCxltLpkvR1Fe2iWoGyRUJiZQX4yZpYlkjSX910wXl+ch0iQZ1C3QvbRaXJOMlwVEZ/q3Hh4I1oKrmGwb56PsWz39b0/piexitT7dAkpK3G5AX0+1sEYUYzwQRjrb4SrtnPRDky+m+NYcbVuGl1A3gVeMfUGEjieHxLQekqUhhQ4JXXwa+dB0av7e1+LkPS/uv/QzsPfgorlv2c2NDQuSLo+AzD+bA8Cbs+BB4Hv4ITVEV0nGqKmYuJxxbJR18DQpQTx0ICkwfZc9HkDtHvE1yCKiojPhjC7t5MzaJnyRwjspAw16QyBTpZlk/YF4NBLrg9Hb5BKvVyUxTcrU3BPLrkorI4F69RJAOB1qQkN59Rnr8wPNLM6EV0h862k8gbLHqoAKlT9H7TFddHbgHio7QROCs+1C8PX3+vvBne2YedvgC4fLLcY4TMg0J2E/VyiqTikq3umSo5ugiFZMFP5OOszrxH9YpSUUG4dv7pZW0o8Zbbkt+9K+XnYLrPbEQCgyM+ZHAT9l66A7/oIasrYE5xxcHsxSOuCGuYTlpsChJPthLt9XEWHz033AKGMWK4xePjlqlz3siW4EfqiYaRwRfJ+1P7rMEmV/yO5YlXfZOQbv+PXt2OR9sWcvMhXrickQxUEn7DLXwVnEuTeeYICSflcjo="
+          secret_access_key:
+            secure: "Xx6lZZegwrwMjTwBG3q8KxpGQWQOQtPz507wS4nZTWi0H2SJVImuSyzeTvlIs7+ITA0qP3RxOc0YSk9QDjKuIfadA+0IHRGyb5xDhr2X5lZ70lEA20cJJbMXmrcYSxmANe7eA5PSuWKEPzGG7ELum4+AFDQNfnmdTjjA05Kkw/MTZgpcuX1s1RUW3mGYKx+LJMCxgfC24nZRB2qNYXuzpk0MMJlvvHLGvvg8Ps22SQQ8yyy6NJG7s7me3BYu1rKdZr3oMMg7jXReajR2IgJxfg+V0YdinSXJSFLFY4hDsCASkBPFDdN3JcD91s+AU9W9bbj5wlU9q57Ec4fbA6hQ4QwuOgRrBH1O2EZlCpWq6YySmwfLJwTg/gltiDM4Rl+qgm6746UaH/2wjSee+Mzs1BcRh9czUv79oIuOAQ4hDEsY+LKveSJAT+yhHQmwr77BMAHa4nAwCIS+5/kbAnBLc9jsIXdKxHjUcnCuXGqRc4KeW7TAZgIEyxXqMPxsfGMlBhEMwTQxLhvxXDXb3qw02a//xsiPHDCh67Biu5MhWR8D9u6P4iTb9ozgQgrPk0nomhJOKwO5mQLWeLWHd8NkEduSwrx6V72zwvHKJWKiiCoyVfnOC3Hml4YBnzdNGKuO7qwG2NXft5MOUXVqfb9hgQJSAPZMqkmv6N+jkPXGUig="
