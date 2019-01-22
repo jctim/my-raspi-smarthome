@@ -4,44 +4,39 @@ python:
   - 3.7.2
 env:
   matrix:
-    - PROJ_DIR=raspi-cloud-controller MYPY_CMD="mypy --ignore-missing-imports -p cloud_flask"
-    - PROJ_DIR=raspi-alexa-lambda     MYPY_CMD="mypy --ignore-missing-imports ."
+    - PROJ_NAME=raspi-cloud-controller MYPY_CMD="mypy --ignore-missing-imports -p cloud_flask"
+    - PROJ_NAME=raspi-alexa-lambda     MYPY_CMD="mypy --ignore-missing-imports ."
 install:
-  - cd $PROJ_DIR
+  - cd $PROJ_NAME
   - pip install mypy==0.650
   - pip install -r requirements.txt
 script: "$MYPY_CMD"
 jobs:
   include:
-    - stage: build (and deploy) docker image
-      env: STAGE=docker
-      install: skip
-      before_script: cd raspi-cloud-controller
-      script:
-        - docker build -t jctim/raspi-cloud-controller:latest .
-        - docker tag jctim/raspi-cloud-controller:latest jctim/raspi-cloud-controller:travis-$TRAVIS_BUILD_NUMBER
-        - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-      deploy:
-        - provider: script
-          skip_cleanup: true
-          script: docker push jctim/raspi-cloud-controller
-    - stage: restart service
-      env: STAGE=ssh
+    - stage: build and deploy docker image; restart service
+      env: STAGE=docker PROJ_NAME=raspi-cloud-controller
+      if: type = api OR commit_message =~ concat('(', env(PROJ_NAME), ')')
       addons:
         ssh_known_hosts:
           secure: "Gv4OMxsA9buyRyg8SbtvjwF7lMmnFREXSGoAVzdTVy9QKoYtnZYC9q6VRaQtr10dpZS8w0RBQEKl/6KKebBbf81VtwONBXMANXJCageUPWpHHZ+uap9hEV42/88JdY00X2M5zZTfE5alnd1IcwLCMhN9Ky9dI9saUWv9q3NkakriTzDsZLYM/vFFLEQL7doj9WMgV7XqPanjjj00VGtbOYdVG6/2u2gSqA/EWSqrJlhaQ4wpNZSMhddDUL/LA76k+DvFAaCrbrRbvAYARY6YAJTkeCBmmJKHIkS/O5/5ZitNEX9ice0QP2JQ6TW15W2oZe1pllUggmy3djG7cnTdtTKmxI/IdLl8LBvIf+M5towxtux0I70U3DV0FctHmnDgpes9cMGZa0Lcg2b5WNf7K6hogUzY4mYlO8ys9Dh3ejJSIUWOvdC/IkqbKrG9wB0blbwxORoHZ701dcrkPXalhRyfIfJmIpuWS4EzgykoMeSqMplVmGfx63vcQO3R0L/SYEMxAjS2o+OlqeN0qEBYEX2Fbx0GA3yDQScdekn9l+kEH8ke7htJwK2XAtqSmE/y2dqf86IheqoBz98ddvLlvNtIn6yFGCv9muam4MGAImbeqnZQ0pa34qX0v28b7jnMMSGn6YnwtJ4sv0MVG7kTwKx56XUlbByYdoQLljI7lSw="
       install: skip
-      before_script: cd raspi-cloud-controller
+      before_script: cd $PROJ_NAME
       script:
-        - openssl aes-256-cbc -K $encrypted_0d630086225e_key -iv $encrypted_0d630086225e_iv -in ../deploy_rsa.enc -out /tmp/deploy_rsa -d
+        - docker build -t $DOCKER_USERNAME/$PROJ_NAME:latest .
+        - docker tag $DOCKER_USERNAME/$PROJ_NAME:latest $DOCKER_USERNAME/$PROJ_NAME:travis-$TRAVIS_BUILD_NUMBER
+        - echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
+        - docker push $DOCKER_USERNAME/$PROJ_NAME
+      after_success:
+        - openssl aes-256-cbc -K $encrypted_0d630086225e_key -iv $encrypted_0d630086225e_iv -in ../.travis/travis_rsa.enc -out /tmp/travis_rsa -d
         - eval "$(ssh-agent -s)"
-        - chmod 600 /tmp/deploy_rsa
-        - ssh-add /tmp/deploy_rsa
-        - ssh $SSH_USER@$SSH_HOST "sudo systemctl restart raspi-cloud-controller.service"
+        - chmod 600 /tmp/travis_rsa
+        - ssh-add /tmp/travis_rsa
+        - ssh $SSH_USER@$SSH_HOST "sudo systemctl restart $PROJ_NAME.service"
     - stage: deploy lambda
-      env: STAGE=lambda
+      env: STAGE=lambda PROJ_NAME=raspi-alexa-lambda
+      if: type = api OR commit_message =~ concat('(', env(PROJ_NAME), ')')
       install: skip
-      before_script: cd raspi-alexa-lambda
+      before_script: cd $PROJ_NAME
       script: skip
       deploy:
         - provider: lambda
