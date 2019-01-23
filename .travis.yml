@@ -3,10 +3,14 @@ dist: xenial
 python:
   - 3.7.2
 env:
+  global:
+    - CHANGED_FILES="$(git diff --name-only $TRAVIS_COMMIT_RANGE --)"
   matrix:
     - PROJ_NAME=raspi-cloud-controller MYPY_CMD="mypy --ignore-missing-imports -p cloud_flask"
     - PROJ_NAME=raspi-alexa-lambda     MYPY_CMD="mypy --ignore-missing-imports ."
+    - PROJ_NAME=raspi-controller       MYPY_CMD="mypy --ignore-missing-imports -p tv_controller"
 install:
+  - echo $CHANGED_FILES
   - cd $PROJ_NAME
   - pip install mypy==0.650
   - pip install -r requirements.txt
@@ -15,7 +19,7 @@ jobs:
   include:
     - stage: build and deploy docker image; restart service
       env: STAGE=docker PROJ_NAME=raspi-cloud-controller
-      if: type = api OR commit_message =~ concat('(', env(PROJ_NAME), ')')
+      if: type = api OR commit_message =~ env(PROJ_NAME)
       addons:
         ssh_known_hosts:
           secure: "Gv4OMxsA9buyRyg8SbtvjwF7lMmnFREXSGoAVzdTVy9QKoYtnZYC9q6VRaQtr10dpZS8w0RBQEKl/6KKebBbf81VtwONBXMANXJCageUPWpHHZ+uap9hEV42/88JdY00X2M5zZTfE5alnd1IcwLCMhN9Ky9dI9saUWv9q3NkakriTzDsZLYM/vFFLEQL7doj9WMgV7XqPanjjj00VGtbOYdVG6/2u2gSqA/EWSqrJlhaQ4wpNZSMhddDUL/LA76k+DvFAaCrbrRbvAYARY6YAJTkeCBmmJKHIkS/O5/5ZitNEX9ice0QP2JQ6TW15W2oZe1pllUggmy3djG7cnTdtTKmxI/IdLl8LBvIf+M5towxtux0I70U3DV0FctHmnDgpes9cMGZa0Lcg2b5WNf7K6hogUzY4mYlO8ys9Dh3ejJSIUWOvdC/IkqbKrG9wB0blbwxORoHZ701dcrkPXalhRyfIfJmIpuWS4EzgykoMeSqMplVmGfx63vcQO3R0L/SYEMxAjS2o+OlqeN0qEBYEX2Fbx0GA3yDQScdekn9l+kEH8ke7htJwK2XAtqSmE/y2dqf86IheqoBz98ddvLlvNtIn6yFGCv9muam4MGAImbeqnZQ0pa34qX0v28b7jnMMSGn6YnwtJ4sv0MVG7kTwKx56XUlbByYdoQLljI7lSw="
@@ -34,7 +38,7 @@ jobs:
         - ssh $SSH_USER@$SSH_HOST "sudo systemctl restart $PROJ_NAME.service"
     - stage: deploy lambda
       env: STAGE=lambda PROJ_NAME=raspi-alexa-lambda
-      if: type = api OR commit_message =~ concat('(', env(PROJ_NAME), ')')
+      if: type = api OR commit_message =~ env(PROJ_NAME)
       install: skip
       before_script: cd $PROJ_NAME
       script: skip

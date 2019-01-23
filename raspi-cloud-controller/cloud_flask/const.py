@@ -1,18 +1,20 @@
 AMAZON_TOKEN_REQUEST = 'https://api.amazon.com/auth/o2/token'
 AMAZON_PROFILE_REQUEST = 'https://api.amazon.com/user/profile'
 
+# TODO make _ALL_ API calls async
+
 ALL_ENDPOINTS = [  # TODO HARDCODED
     {
         "endpointId": "tv-01",
         "friendlyName": "Philips TV",
         "description": "Philips 6008 TV controlled by RasPi",
-        "manufacturerName": "Philips by RasPi",
+        "manufacturerName": "Philips",
         "displayCategories": [
             "TV"
         ],
         'capabilities': {
             'Alexa.PowerController': ['powerState'],
-            'Alexa.InputController': ['HDMI 1', 'HDMI 2', 'HDMI 3', 'XBOX'],
+            'Alexa.InputController': ['HDMI 1', 'HDMI 2', 'HDMI 3', 'HDMI 4', 'XBOX', 'ANDROID', 'APPLE'],
             'Alexa.PlaybackController': ["Play", "Pause", "Stop"],
             'Alexa.Speaker': ['volume', 'muted'],
             'Alexa.EndpointHealth': ['connectivity'],
