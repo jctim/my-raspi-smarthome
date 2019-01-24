@@ -8,10 +8,7 @@ from response_builder import (build_discovery_response,
                               build_input_controller_response,
                               build_power_controller_response)
 
-try:
-    from botocore.vendored import requests
-except ImportError:
-    import requests
+from botocore.vendored import requests
 
 HOST = os.environ['HOST']
 
