@@ -1,0 +1,2 @@
+# for local testing purposes. There is a bundled botocore.vendored.requests on AWS Lambda exist
+requests==2.21.0 

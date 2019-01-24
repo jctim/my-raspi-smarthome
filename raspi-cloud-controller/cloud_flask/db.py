@@ -64,7 +64,7 @@ def update_user_with_pubnub(user_id: int, pubnub_publish_key: str, pubnub_subscr
     db = get_db()
     user = find_user_by_id(user_id)
     if user is None:
-        raise ValueError('User not found by id ' + user_id)
+        raise ValueError('User not found by id {}'.format(user_id))
     else:
         db.execute('UPDATE user SET pubnub_publish_key = ?, pubnub_subscribe_key = ? WHERE id = ?',
                    (pubnub_publish_key, pubnub_subscribe_key, user_id))

@@ -1,5 +1,5 @@
 AMAZON_TOKEN_REQUEST = 'https://api.amazon.com/auth/o2/token'
-AMAZON_PROFILE_REQUEST = 'https://api.amazon.com/user/profile'
+AMAZON_PROFILE_REQUEST = 'https://api.amazon.com/user/profile?access_token={}'
 
 # TODO make _ALL_ API calls async
 

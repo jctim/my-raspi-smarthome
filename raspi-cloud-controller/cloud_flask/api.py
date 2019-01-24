@@ -22,17 +22,17 @@ def ensure_amazon_user_id_exists(view):
     @functools.wraps(view)
     def wrapped_view(**kwargs):
         req_json = request.get_json()
-        app.logger.debug('[ensure_amazon_user_id] json: ' + json.dumps(req_json))
+        app.logger.debug('[ensure_amazon_user_id] json: {}'.format(json.dumps(req_json)))
 
         if 'accessToken' not in req_json:
             app.logger.debug('[ensure_amazon_user_id] access_token_not_provided')
             return jsonify({'error': 'access_token_not_provided'}), 400
         else:
-            profile_response = requests.get(AMAZON_PROFILE_REQUEST + '?access_token=' + req_json['accessToken'])
+            profile_response = requests.get(AMAZON_PROFILE_REQUEST.format(req_json['accessToken']))
             profile_json = profile_response.json()
 
             if profile_response.status_code != 200:
-                app.logger.debug('[ensure_amazon_user_id] ' + profile_json['error'])
+                app.logger.debug('[ensure_amazon_user_id] {}'.format(profile_json['error']))
                 return jsonify({'error': profile_json['error']}), 403
             else:
                 amazon_user_id = profile_json['user_id']
@@ -51,20 +51,20 @@ def ensure_thing_related_to_user(view):
     @functools.wraps(view)
     def wrapped_view(**kwargs):
         req_json = request.get_json()
-        app.logger.debug('[ensure_thing_related_to_user] json: ' + json.dumps(req_json))
+        app.logger.debug('[ensure_thing_related_to_user] json: {}'.format(json.dumps(req_json)))
 
         if 'endpointId' not in req_json:
             app.logger.debug('[ensure_thing_related_to_user] endpoint_id_not_provided')
             return jsonify({'error': 'endpoint_id_not_provided'}), 400
         else:
-            app.logger.debug('[ensure_thing_related_to_user] AMAZON_USER_ID: ' + g.amazon_user_id)
+            app.logger.debug('[ensure_thing_related_to_user] AMAZON_USER_ID: {}'.format(g.amazon_user_id))
             user = find_user_by_amazon_id(g.amazon_user_id)
             if user is None:
                 app.logger.debug('[ensure_thing_related_to_user] user_not_found')
                 return jsonify({'error': 'user_not_found'}), 403
             else:
                 endpoint_id = req_json['endpointId']
-                app.logger.debug('[ensure_thing_related_to_user] ENDPOINT_ID: ' + endpoint_id)
+                app.logger.debug('[ensure_thing_related_to_user] ENDPOINT_ID: {}'.format(endpoint_id))
                 user_thing = find_thing_by_endpoint_id_and_user_id(endpoint_id, user['id'])
                 if user_thing is None:
                     app.logger.debug('[ensure_thing_related_to_user] thing_not_found')

@@ -99,5 +99,5 @@ def _properties(namespace: str, name: str, value: str, time: str) -> List[Dict[s
             }]
 
 
-def _get_uuid():
+def _get_uuid() -> str:
     return str(uuid.uuid4())

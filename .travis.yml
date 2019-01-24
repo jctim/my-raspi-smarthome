@@ -14,7 +14,9 @@ install:
   - cd $PROJ_NAME
   - pip install mypy==0.650
   - pip install -r requirements.txt
-script: "$MYPY_CMD"
+script: 
+  - $MYPY_CMD
+  - python3 -m unittest discover -p '*_test.py' -v -s tests
 jobs:
   include:
     - stage: build and deploy docker image; restart service

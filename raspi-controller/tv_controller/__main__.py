@@ -18,7 +18,7 @@ def main():
     pubnub.add_listener(CloudCallback())
     pubnub.subscribe().channels('alexa').with_presence().execute()
 
-    logger.debug('main started with sys args: ' + str(sys.argv))
+    logger.debug('main started with sys args: {}'.format(sys.argv))
 
 
 if __name__ == '__main__':

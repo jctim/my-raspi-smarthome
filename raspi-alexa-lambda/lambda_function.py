@@ -1,11 +1,17 @@
 import json
 import os
 
-from botocore.vendored import requests
-
-from endpoint_builder import *
+from endpoint_builder import build_endpoint
 from error_type import ErrorType
-from response_builder import *
+from response_builder import (build_discovery_response,
+                              build_error_response,
+                              build_input_controller_response,
+                              build_power_controller_response)
+
+try:
+    from botocore.vendored import requests
+except ImportError:
+    import requests
 
 HOST = os.environ['HOST']
 
