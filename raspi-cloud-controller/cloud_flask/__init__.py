@@ -2,7 +2,7 @@ import os
 
 from flask import Flask
 
-from . import api, user, db
+from . import api, user, thing, db
 
 
 def create_app(test_config=None):
@@ -12,8 +12,6 @@ def create_app(test_config=None):
         SECRET_KEY='dev',
         AMAZON_CLIENT_ID='client_id',
         AMAZON_CLIENT_SECRET='client_secret',
-        PUBNUB_PUB_KEY='pub_key',
-        PUBNUB_SUB_KEY='sub_key',
         DATABASE=os.path.join(app.instance_path, 'cloud-controller.sqlite'),
     )
     if test_config is None:
@@ -31,6 +29,7 @@ def create_app(test_config=None):
 
     db.init_app(app)
     app.register_blueprint(user.bp)
+    app.register_blueprint(thing.bp)
     app.register_blueprint(api.bp)
 
     return app

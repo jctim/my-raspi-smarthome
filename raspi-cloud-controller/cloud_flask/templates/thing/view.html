@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+
+{% block header %}
+<h1>{% block title %}Your thing '{{g.thing['endpoint_id']}}' {% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+{% if g.user and g.thing %}
+<a href="{{ url_for('thing.list') }}" id="List">List</a>
+<a href="{{ url_for('thing.edit', thing_id=g.thing['id']) }}" id="Edit">Edit</a>
+<ul>
+    <li>Name: {{ g.thing['endpoint_id'] }}</li>
+    <li>Friendly Name:{{ g.thing['friendly_name'] }}</li>
+    <li>Description: {{ g.thing['description'] }}</li>
+    <li>Manufacturer: {{ g.thing['manufacturer_name'] }}</li>
+    <li>Category: {{ g.thing['alexa_category_name'] }}</li>
+    <li>Interfaces and Capabilities:
+        <ul>
+            {% for thing_interface in g.thing_interfaces %}
+            <li>{{ thing_interface['name'] }}: [{{ thing_interface['capabilities'] }}]</li>
+            {% endfor %}
+        </ul>
+    </li>
+</ul>
+{% endif %}
+{% endblock %}

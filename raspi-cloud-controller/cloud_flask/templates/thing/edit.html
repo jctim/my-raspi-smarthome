@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+
+{% block header %}
+<h1>{% block title %}Editing the thing '{{g.thing.endpoint_id}}' {% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+{% if g.user %}
+<a href="{{ url_for('thing.list') }}" id="List">List</a>
+<a href="{{ url_for('thing.view', thing_id=g.thing['id']) }}" id="View">View</a>
+<form method="post">
+    <label for="name">Name</label>
+    <input name="name" id="name" value="{{ g.thing['endpoint_id'] }}">
+
+    <label for="friendly_name">Friendly Name</label>
+    <input name="friendly_name" id="friendly_name" value="{{ g.thing['friendly_name'] }}">
+
+    <label for="description">Description</label>
+    <input name="description" id="description" value="{{ g.thing['description'] }}">
+
+    <label for="manufacturer_name">Manufacturer Name</label>
+    <input name="manufacturer_name" id="manufacturer_name" value="{{ g.thing['manufacturer_name'] }}">
+
+    <label for="alexa_category_name">Alexa Category</label>
+    <select name="alexa_category_name" id="alexa_category_name">
+        {% for alexa_category in alexa_categories %}
+        {% if g.thing['alexa_category_id'] == alexa_category['id'] %}
+        <option id="{{ alexa_category['id'] }}" selected="selected">{{ alexa_category['name'] }}</option>
+        {% else %}
+        <option id="{{ alexa_category['id'] }}">{{ alexa_category['name'] }}</option>
+        {% endif %}
+        {% endfor %}
+    </select>
+
+    <label for="alexa_interfaces">Alexa Interfaces</label>
+    <ul id="alexa_interfaces">
+        {% for thing_interface in g.thing_interfaces %}
+        <!--{{ thing_interface['name'] }}: [{{ thing_interface['capabilities'] }}]-->
+        <li>
+            <select name="alexa_interface_{{ thing_interface['id'] }}" id="alexa_interface_{{ thing_interface['id'] }}">
+                {% for alexa_interface in alexa_interfaces %}
+                {% if thing_interface['id'] == alexa_interface['id'] %}
+                <option id="{{ alexa_interface['id'] }}" selected="selected">{{ alexa_interface['name'] }}</option>
+                {% else %}
+                <option id="{{ alexa_interface['id'] }}">{{ alexa_interface['name'] }}</option>
+                {% endif %}
+                {% endfor %}
+                <input name="alexa_interface_capabilities_{{ thing_interface['id'] }}" id="alexa_interface_capabilities_{{ thing_interface['id'] }}"
+                    value="{{ thing_interface['capabilities'] }}">
+            </select>
+        </li>
+        {% endfor %}
+    </ul>
+
+
+    <input type="submit" value="Update">
+</form>
+{% endif %}
+{% endblock %}

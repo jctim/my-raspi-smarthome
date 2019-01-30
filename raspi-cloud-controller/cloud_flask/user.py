@@ -1,4 +1,4 @@
-import functools
+
 import json
 import time
 
@@ -8,31 +8,16 @@ from flask import current_app as app
 from flask import (flash, g, jsonify, redirect, render_template, request,
                    session, url_for)
 
-from .const import AMAZON_PROFILE_REQUEST, AMAZON_TOKEN_REQUEST
+from .common import (AMAZON_PROFILE_REQUEST, AMAZON_TOKEN_REQUEST,
+                     load_logged_in_user, login_required)
 from .db import create_or_update_user, find_user_by_id, update_user_with_pubnub
 
 bp = Blueprint('user', __name__, url_prefix='/user')
 
 
-def login_required(view):
-    @functools.wraps(view)
-    def wrapped_view(**kwargs):
-        if g.user is None:
-            return redirect(url_for('user.login'))
-
-        return view(**kwargs)
-
-    return wrapped_view
-
-
 @bp.before_app_request
-def load_logged_in_user():
-    user_id = session.get('user_id')
-
-    if user_id is None:
-        g.user = None
-    else:
-        g.user = find_user_by_id(user_id)
+def before_app_request():
+    load_logged_in_user()
 
 
 @bp.route('/login')
@@ -103,7 +88,7 @@ def profile():
         user_id = g.user['id']
         pubnub_publish_key = request.form['pubnub_publish_key']
         pubnub_subscribe_key = request.form['pubnub_subscribe_key']
-        
+
         update_user_with_pubnub(user_id, pubnub_publish_key, pubnub_subscribe_key)
         g.user = find_user_by_id(user_id)
 

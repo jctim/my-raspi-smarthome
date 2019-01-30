@@ -6,6 +6,7 @@
   <ul>
     {% if g.user %}
     <li><span>{{ g.user['username'] }}</span>
+    <li><a href="{{ url_for('thing.list') }}" id="Things">Things</a>
     <li><a href="{{ url_for('user.profile') }}" id="Profile">Profile</a>
     <li><a href="{{ url_for('user.logout') }}" id="Logout">Log Out</a>
       {% else %}

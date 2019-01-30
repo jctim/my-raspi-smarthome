@@ -1,5 +1,5 @@
 import sqlite3
-from typing import List
+from typing import List, Tuple
 
 import click
 from flask import Flask
@@ -73,6 +73,12 @@ def update_user_with_pubnub(user_id: int, pubnub_publish_key: str, pubnub_subscr
     return user['id']
 
 
+def get_user_pubnub_keys(user_id: int) -> Tuple[str, str]:
+    db = get_db()
+    res = db.execute('SELECT pubnub_publish_key, pubnub_subscribe_key FROM user WHERE id = ?', (user_id,)).fetchone()
+    return (res['pubnub_publish_key'], res['pubnub_subscribe_key'])
+
+
 def find_user_by_id(id: int) -> sqlite3.Row:
     db = get_db()
     return db.execute('SELECT * FROM user WHERE id = ?', (id,)).fetchone()
@@ -96,3 +102,30 @@ def find_thing_by_endpoint_id_and_user_id(endpoint_id: str, user_id: int) -> sql
 def find_things_by_user_id(user_id: int) -> List[sqlite3.Row]:
     db = get_db()
     return db.execute('SELECT * FROM thing WHERE user_id = ?', (user_id,)).fetchall()
+
+
+def find_thing_by_id(id: int) -> sqlite3.Row:
+    db = get_db()
+    return db.execute('\
+        SELECT t.id, endpoint_id, user_id, friendly_name, description, manufacturer_name, \
+            ac.id as alexa_category_id, ac.name as alexa_category_name \
+        FROM thing t \
+        INNER JOIN alexa_category ac ON ac.id = t.alexa_category_id \
+        WHERE t.id = ?', (id,)).fetchone()
+
+
+def find_thing_interfaces_by_id(id: int) -> List[sqlite3.Row]:
+    db = get_db()
+    return db.execute('\
+        SELECT taic.thing_id, taic.alexa_interface_id as id, taic.capabilities, ai.name as name \
+        FROM thing_alexa_interface_capabilities taic \
+        INNER JOIN alexa_interface ai ON ai.id = taic.alexa_interface_id \
+        WHERE taic.thing_id = ?', (id,)).fetchall()
+
+def get_all_categories() -> List[sqlite3.Row]:
+    db = get_db()
+    return db.execute('SELECT id, name FROM alexa_category').fetchall()
+
+def get_all_interfaces() -> List[sqlite3.Row]:
+    db = get_db()
+    return db.execute('SELECT id, name FROM alexa_interface').fetchall()

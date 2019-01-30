@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block header %}
+<h1>{% block title %}Your things{% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+{% if g.user %}
+<a href="{{ url_for('thing.add') }}" id="Add">Add</a>
+<ul>
+{% for thing in things %}
+    <li><a href="view/{{ thing.id }}">{{ thing.endpoint_id }}: {{ thing.friendly_name }}</a></li>
+{% endfor %}
+</ul>
+{% endif %}
+{% endblock %}
