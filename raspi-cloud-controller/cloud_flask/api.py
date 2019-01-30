@@ -1,3 +1,4 @@
+from queue import Queue
 import functools
 import json
 import time
@@ -8,7 +9,13 @@ from flask import current_app as app
 from flask import (flash, g, jsonify, redirect, render_template, request,
                    session, url_for)
 from pubnub.pnconfiguration import PNConfiguration
+from pubnub.callbacks import SubscribeCallback
+from pubnub.structures import Envelope
+from pubnub.models.consumer.common import PNStatus
+from pubnub.models.consumer.pubsub import (PNMessageResult, PNPublishResult,
+                                           PNPresenceEventResult)
 from pubnub.pubnub import PubNub
+
 
 from . import db
 from .common import AMAZON_PROFILE_REQUEST, AMAZON_TOKEN_REQUEST
@@ -113,7 +120,7 @@ def power(command):
     else:
         return jsonify({'error': 'unsupported_command'}), 400
 
-    return jsonify({'result': result, 'time': _get_utc_timestamp()})
+    return jsonify({'result': {'power': result}, 'time': _get_utc_timestamp()})
 
 
 @bp.route('/input/<source>', methods=['POST'])
@@ -124,7 +131,63 @@ def input(source):
     pubnub.publish().channel('alexa').message({"requester": "Alexa", "device": g.endpoint_id, "source": source}).sync()
     result = source
 
-    return jsonify({'result': result, 'time': _get_utc_timestamp()})
+    return jsonify({'result': {'input': result}, 'time': _get_utc_timestamp()})
+
+
+# TODO: research for make async operation as sync in Python
+class AlexaResponseCallback(SubscribeCallback):
+
+    def __init__(self, q, uuid):
+        self.q = q
+        self.uuid = uuid
+
+    def status(self, pubnub: PubNub, status: PNStatus) -> None:
+        print('status: {}'.format(vars(status)))
+
+    def presence(self, pubnub: PubNub, presence: PNPresenceEventResult) -> None:
+        print('presence: {}'.format(vars(presence)))
+
+    def message(self, pubnub: PubNub, message: PNMessageResult) -> None:
+        print('message: {}'.format(vars(message)))
+        if message.channel != 'alexa_response' and message.publisher != self.uuid:
+            return
+
+        self.q.put(message.message)
+
+# TODO: research for make async operation as sync in Python
+def wait_for_response(pubnub: PubNub, uuid: str):
+    q: Queue = Queue()
+    response_listener = AlexaResponseCallback(q, uuid)
+    pubnub.add_listener(response_listener)
+    message = q.get()
+    pubnub.remove_listener(response_listener)
+    return message
+
+
+@bp.route('/speaker/<command>/<value>', methods=['POST'])
+@api_ensure_amazon_user_id_exists
+@api_ensure_thing_belongs_to_user
+def speaker(command, value):
+    pubnub = _create_pubnub()
+    pubnub.subscribe().channels('alexa_response').with_presence().execute()  # TODO: make pubnub-wrapper
+    if command == 'SetVolume':
+        e: Envelope = pubnub.publish().channel('alexa').message({"requester": "Alexa", "device": g.endpoint_id, "volume": value, "type": "abs"}).sync()
+        result = wait_for_response(pubnub, e.status.uuid)  # FIXME: add timeout
+    elif command == 'AdjustVolume':
+        e: Envelope = pubnub.publish().channel('alexa').message({"requester": "Alexa", "device": g.endpoint_id, "volume": value, "type": "rel"}).sync()
+        result = wait_for_response(pubnub, e.status.uuid)  # FIXME: add timeout
+    elif command == 'SetMute':
+        e: Envelope = pubnub.publish().channel('alexa').message({"requester": "Alexa", "device": g.endpoint_id, "volume": value, "type": "mute"}).sync()
+        result = wait_for_response(pubnub, e.status.uuid)  # FIXME: add timeout
+    else:
+        return jsonify({'error': 'unsupported_command'}), 400
+
+    pubnub.unsubscribe().channels('alexa_response')
+
+    if 'error' in result:
+        return jsonify({'error': 'unknown_error'}), 500
+
+    return jsonify({'result': {'volume': result['volume'], 'muted': result['muted']}, 'time': _get_utc_timestamp()})
 
 
 def _create_pubnub():

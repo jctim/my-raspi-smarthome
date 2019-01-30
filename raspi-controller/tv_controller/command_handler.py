@@ -3,69 +3,102 @@
 import os
 import subprocess
 import sys
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple, Union
 
-from .__init__ import logger
+import requests
+from requests.models import Response
+from pubnub.pubnub import PubNub
+
+from .__init__ import CEC_CMD, HDMI_NAMES, TV_API_URL, TX_CMD, DEVICE_ID, logger, str_to_bool
 
 # TODO think about how to deploy on RPI.
 
 
-# Refer to https://www.raspberrypi.org/forums/viewtopic.php?f=29&t=53481
-CEC_CMD = 'echo "{}" | cec-client RPI -s -d 1'
-
-# Refer to http://www.cec-o-matic.com
-TX_CMD: Dict[str, Dict[str, List[str]]] = {
-    'power': {
-        'on': ['tx 10:04'],
-        'off': ['tx 10:36']
-    },
-    'source': {
-        'hdmi1': ['tx 1F:82:10:00', 'tx 1F:86:10:00'],
-        'hdmi2': ['tx 1F:82:20:00', 'tx 1F:86:20:00'],
-        'hdmi3': ['tx 1F:82:30:00', 'tx 1F:86:30:00'],
-        'hdmi4': ['tx 1F:82:40:00', 'tx 1F:86:40:00']
-    }
-}
-
-HDMI_NAMES: Dict[str, List[str]] = {
-    'hdmi1': ['HDMI 1', 'ANDROID', 'ANDROID TV', 'MIBOX'],
-    'hdmi2': ['HDMI 2', 'XBOX'],
-    'hdmi3': ['HDMI 3', 'APPLE', 'APPLE TV'],
-    'hdmi4': ['HDMI 4', 'RASPBERRY', 'RASPBERRY PI', 'CONTROLLER']
-}
-
-
-def handle_control_command(command: Dict[str, str]) -> None:
-    if 'power' in command:
-        logger.debug('tv power will {}'.format(command['power']))
-        _power(command['power'])
-    elif 'source' in command:
-        logger.debug('tv source will {}'.format(command['source']))
-        _source(command['source'])
-    else:
-        logger.debug('unsupported command {}'.format(command))
-
-
-def _power(action: str) -> None:
-    if action == 'on' or action == 'off':
-        _exec_cec(TX_CMD['power'][action])
-    else:
-        logger.debug('Unknown power action: {}'.format(action))
-
-
-def _source(source: str) -> None:
-    matched_source = [hdmi for hdmi, names in HDMI_NAMES.items() if source in names]
-    if len(matched_source) == 1:
-        _exec_cec(TX_CMD['source'][matched_source[0]])
-    else:
-        logger.debug('Unknown source: {}'.format(source))
-
-
-def _exec_cec(tx_cmd: List[str]) -> None:
+def exec_cec_cmd(tx_cmd: List[str]) -> None:
     logger.debug('sending CEC command(s) {}...'.format(tx_cmd))
     try:
-        # [print(CEC_CMD.format(cmd)) for cmd in tx_cmd]
         [os.system(CEC_CMD.format(cmd)) for cmd in tx_cmd]
         logger.debug('sent!')
     except OSError as err:
         logger.error('Cannot execute CEC command(s) {}'.format(tx_cmd), err)
+
+
+def handle_power(action: str) -> None:
+    if action == 'on' or action == 'off':
+        exec_cec_cmd(TX_CMD['power'][action])
+    else:
+        logger.debug('Unknown power action: {}'.format(action))
+
+
+def handle_source(source: str) -> None:
+    matched_source = [hdmi for hdmi, names in HDMI_NAMES.items() if source in names]
+    if len(matched_source) == 1:
+        exec_cec_cmd(TX_CMD['source'][matched_source[0]])
+    else:
+        logger.debug('Unknown source: {}'.format(source))
+
+
+def _get_api_volume() -> Union[Tuple[bool, int, int], None]:
+    r: Response = requests.get(TV_API_URL.format(cmd='audio/volume'))
+    if r.status_code == 200:
+        rjson = r.json()
+        current_muted = bool(rjson['muted'])
+        current_volume = int(rjson['current'])
+        max_volume = int(rjson['max'])
+        return (current_muted, current_volume, max_volume)
+
+    return None
+
+
+def handle_volume(volume_type: str, volume_value: str, pubnub: PubNub) -> None:
+    api_volume = _get_api_volume()
+    if api_volume is None:
+        logger.debug('Cannot get current volume. Looks like TV API is unaccessible')
+        return
+
+    (muted, current_volume, max_volume) = api_volume
+
+    r: Response
+    if volume_type == 'abs':
+        new_value = min(int(volume_value), max_volume)
+        r = requests.post(TV_API_URL.format(cmd='audio/volume'), json={"current": new_value})
+        if r.status_code == 200:
+            pubnub.publish().channel('alexa_response').message({"requester": "Device", "device": DEVICE_ID, "muted": str(muted).lower(), "volume": new_value}).sync()
+        else:
+            logger.debug('Unsuccessull operation: {}'.format(r.status_code))
+            pubnub.publish().channel('alexa_response').message({"requester": "Device", "device": DEVICE_ID, "error": "an error occured during executing operation"}).sync()
+
+    elif volume_type == 'rel':
+        new_value = max(1, min(current_volume + int(volume_value), max_volume))
+        r = requests.post(TV_API_URL.format(cmd='audio/volume'), json={"current": new_value})
+        if r.status_code == 200:
+            pubnub.publish().channel('alexa_response').message({"requester": "Device", "device": DEVICE_ID, "muted": str(muted).lower(), "volume": new_value}).sync()
+        else:
+            logger.debug('Unsuccessull operation: {}'.format(r.status_code))
+            pubnub.publish().channel('alexa_response').message({"requester": "Device", "device": DEVICE_ID, "error": "an error occured during executing operation"}).sync()
+
+    elif volume_type == 'mute':
+        new_value = str_to_bool(volume_value)
+        r = requests.post(TV_API_URL.format(cmd='audio/volume'), json={"muted": new_value})
+        if r.status_code == 200:
+            pubnub.publish().channel('alexa_response').message({"requester": "Device", "device": DEVICE_ID, "muted": str(new_value).lower(), "volume": current_volume}).sync()
+        else:
+            logger.debug('Unsuccessull operation: {}'.format(r.status_code))
+            pubnub.publish().channel('alexa_response').message({"requester": "Device", "device": DEVICE_ID, "error": "an error occured during executing operation"}).sync()
+
+    else:
+        logger.debug('Unknown volume type: {}'.format(volume_type))
+
+
+def handle_control_command(command: Dict[str, str], pubnub: PubNub) -> None:
+    if 'power' in command:
+        logger.debug('tv power will {}'.format(command['power']))
+        handle_power(command['power'])
+    elif 'source' in command:
+        logger.debug('tv source will {}'.format(command['source']))
+        handle_source(command['source'])
+    elif 'volume' in command and 'type' in command:
+        logger.debug('tv volume (type={}) will {}'.format(command['type'], command['volume']))
+        handle_volume(command['type'], command['volume'], pubnub)
+    else:
+        logger.debug('unsupported command {}'.format(command))

@@ -39,7 +39,7 @@ def view(thing_id: int):
 @login_required
 @ensure_thing_belongs_to_user
 def edit(thing_id: int):
-    # TODO process POST 
+    # TODO: process POST 
     g.thing_interfaces = db.find_thing_interfaces_by_id(g.user['id'])
     alexa_categories = db.get_all_categories()
     alexa_interfaces = db.get_all_interfaces()
@@ -49,7 +49,7 @@ def edit(thing_id: int):
 @bp.route('/add')
 @login_required
 def add():
-    # TODO process POST 
+    # TODO: process POST 
     alexa_categories = db.get_all_categories()
     alexa_interfaces = db.get_all_interfaces()
     return render_template('thing/add.html', alexa_categories=alexa_categories, alexa_interfaces=alexa_interfaces)

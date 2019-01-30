@@ -24,11 +24,11 @@ def build_discovery_response(endpoints: Dict[str, Any]) -> Dict[str, Any]:
     return response
 
 
-def build_power_controller_response(value: str, time: str,
+def build_power_controller_response(power_value: str, time: str,
                                     correlation_token: str, endpoint_id: str) -> Dict[str, Any]:
     response = {
         "context": {
-            "properties": _properties('Alexa.PowerController', 'powerState', value, time)
+            "properties": [_property('Alexa.PowerController', 'powerState', power_value, time)]
         },
         "event": {
             "header": _header(correlation_token),
@@ -42,12 +42,34 @@ def build_power_controller_response(value: str, time: str,
     return response
 
 
-def build_input_controller_response(value: str, time: str,
+def build_input_controller_response(input_value: str, time: str,
                                     correlation_token: str, endpoint_id: str) -> Dict[str, Any]:
 
     response = {
         "context": {
-            "properties": _properties('Alexa.InputController', 'input', value, time)
+            "properties": [_property('Alexa.InputController', 'input', input_value, time)]
+        },
+        "event": {
+            "header": _header(correlation_token),
+            "endpoint": {
+                "endpointId": endpoint_id
+            },
+            "payload": {}
+        }
+    }
+    print("[DEBUG]", "Alexa.InputController Response:", json.dumps(response))
+    return response
+
+
+def build_speaker_controller_response(volume_value: str, muted_value: str, time: str,
+                                      correlation_token: str, endpoint_id: str) -> Dict[str, Any]:
+
+    response = {
+        "context": {
+            "properties": [
+                _property('Alexa.Speaker', 'volume', volume_value, time),
+                _property('Alexa.Speaker', 'muted', muted_value, time)
+            ]
         },
         "event": {
             "header": _header(correlation_token),
@@ -89,14 +111,14 @@ def _header(correlation_token: str, name: str = 'Response')-> Dict[str, str]:
     }
 
 
-def _properties(namespace: str, name: str, value: str, time: str) -> List[Dict[str, Union[str, int]]]:
-    return [{
-            "namespace": namespace,
-            "name": name,
-            "value": value,
-            "timeOfSample": time,
-            "uncertaintyInMilliseconds": 50
-            }]
+def _property(namespace: str, name: str, value: str, time: str) -> Dict[str, Union[str, int]]:
+    return {
+        "namespace": namespace,
+        "name": name,
+        "value": value,
+        "timeOfSample": time,
+        "uncertaintyInMilliseconds": 50
+    }
 
 
 def _get_uuid() -> str:

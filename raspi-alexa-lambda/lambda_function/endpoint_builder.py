@@ -8,7 +8,7 @@ def build_endpoint(endpoint):
         "description": endpoint['description'],
         "displayCategories": endpoint['displayCategories'],
         "cookie": {
-            # TODO
+            # TODO: why do I need those tags?
             "key1": "arbitrary key/value pairs for skill to reference this endpoint.",
                     "key2": "There can be multiple entries",
                     "key3": "but they should only be used for reference purposes.",

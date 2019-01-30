@@ -5,7 +5,7 @@ from pubnub.pnconfiguration import PNConfiguration
 from pubnub.pubnub import PubNub
 
 from .__init__ import logger
-from .callback import CloudCallback
+from .callback import AlexaCloudCallback
 
 
 def main():
@@ -15,7 +15,7 @@ def main():
     pnconfig.ssl = True
 
     pubnub = PubNub(pnconfig)
-    pubnub.add_listener(CloudCallback())
+    pubnub.add_listener(AlexaCloudCallback())
     pubnub.subscribe().channels('alexa').with_presence().execute()
 
     logger.debug('main started with sys args: {}'.format(sys.argv))
