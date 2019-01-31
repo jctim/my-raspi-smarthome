@@ -114,18 +114,18 @@ def find_thing_by_id(id: int) -> sqlite3.Row:
         WHERE t.id = ?', (id,)).fetchone()
 
 
-def find_thing_interfaces_by_id(id: int) -> List[sqlite3.Row]:
+def find_thing_capabilities_by_id(id: int) -> List[sqlite3.Row]:
     db = get_db()
     return db.execute('\
-        SELECT taic.thing_id, taic.alexa_interface_id as id, taic.capabilities, ai.name as name \
-        FROM thing_alexa_interface_capabilities taic \
-        INNER JOIN alexa_interface ai ON ai.id = taic.alexa_interface_id \
-        WHERE taic.thing_id = ?', (id,)).fetchall()
+        SELECT tacp.thing_id, tacp.alexa_capability_id as id, tacp.properties, ac.name as name \
+        FROM thing_alexa_capability_properties tacp \
+        INNER JOIN alexa_capability ac ON ac.id = tacp.alexa_capability_id \
+        WHERE tacp.thing_id = ?', (id,)).fetchall()
 
 def get_all_categories() -> List[sqlite3.Row]:
     db = get_db()
     return db.execute('SELECT id, name FROM alexa_category').fetchall()
 
-def get_all_interfaces() -> List[sqlite3.Row]:
+def get_all_capabilities() -> List[sqlite3.Row]:
     db = get_db()
-    return db.execute('SELECT id, name FROM alexa_interface').fetchall()
+    return db.execute('SELECT id, name FROM alexa_capability').fetchall()

@@ -14,10 +14,10 @@
     <li>Description: {{ g.thing['description'] }}</li>
     <li>Manufacturer: {{ g.thing['manufacturer_name'] }}</li>
     <li>Category: {{ g.thing['alexa_category_name'] }}</li>
-    <li>Interfaces and Capabilities:
+    <li>Capabilities and Properties:
         <ul>
-            {% for thing_interface in g.thing_interfaces %}
-            <li>{{ thing_interface['name'] }}: [{{ thing_interface['capabilities'] }}]</li>
+            {% for thing_capability in g.thing_capabilities %}
+            <li>{{ thing_capability['name'] }}: [{{ thing_capability['properties'] }}]</li>
             {% endfor %}
         </ul>
     </li>

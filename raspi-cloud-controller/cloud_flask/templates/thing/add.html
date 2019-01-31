@@ -27,14 +27,14 @@
         {% endfor %}
     </select>
 
-    <label for="alexa_interfaces">Alexa Interfaces</label>
-    <ul id="alexa_interfaces">
+    <label for="alexa_capabilities">Alexa Capabilities</label>
+    <ul id="alexa_capabilities">
         <li>
-            <select name="alexa_interface" id="alexa_interface">
-                {% for alexa_interface in alexa_interfaces %}
-                <option id="{{ alexa_interface['id'] }}">{{ alexa_interface['name'] }}</option>
+            <select name="alexa_capability" id="alexa_capability">
+                {% for alexa_capability in alexa_capabilities %}
+                <option id="{{ alexa_capability['id'] }}">{{ alexa_capability['name'] }}</option>
                 {% endfor %}
-                <input name="alexa_interface_capabilities" id="alexa_interface_capabilities" value="">
+                <input name="alexa_capability_properties" id="alexa_capability_properties" value="">
             </select>
         </li>
     </ul>

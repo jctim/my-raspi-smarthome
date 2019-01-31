@@ -87,7 +87,7 @@ def discover():
 
 def _build_endpoint(thing_id):
     thing = db.find_thing_by_id(thing_id)
-    interfaces = db.find_thing_interfaces_by_id(thing_id)
+    capabilities = db.find_thing_capabilities_by_id(thing_id)
     return {
         "endpointId": thing['endpoint_id'],
         "friendlyName": thing['friendly_name'],
@@ -96,7 +96,7 @@ def _build_endpoint(thing_id):
         "displayCategories": [
             thing['alexa_category_name']
         ],
-        'capabilities': {interface['name']: [c.strip() for c in interface['capabilities'].split(',')] for interface in interfaces}
+        'capabilities': {capability['name']: [c.strip() for c in capability['properties'].split(',')] for capability in capabilities}
     }
 
 

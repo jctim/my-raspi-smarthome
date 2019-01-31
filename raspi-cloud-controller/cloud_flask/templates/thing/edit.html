@@ -32,21 +32,20 @@
         {% endfor %}
     </select>
 
-    <label for="alexa_interfaces">Alexa Interfaces</label>
-    <ul id="alexa_interfaces">
-        {% for thing_interface in g.thing_interfaces %}
-        <!--{{ thing_interface['name'] }}: [{{ thing_interface['capabilities'] }}]-->
+    <label for="alexa_capabilities">Alexa Capabilities</label>
+    <ul id="alexa_capabilities">
+        {% for thing_capability in g.thing_capabilities %}
         <li>
-            <select name="alexa_interface_{{ thing_interface['id'] }}" id="alexa_interface_{{ thing_interface['id'] }}">
-                {% for alexa_interface in alexa_interfaces %}
-                {% if thing_interface['id'] == alexa_interface['id'] %}
-                <option id="{{ alexa_interface['id'] }}" selected="selected">{{ alexa_interface['name'] }}</option>
+            <select name="alexa_capability_{{ thing_capability['id'] }}" id="alexa_capability_{{ thing_capability['id'] }}">
+                {% for alexa_capability in alexa_capabilities %}
+                {% if thing_capability['id'] == alexa_capabilities['id'] %}
+                <option id="{{ alexa_capability['id'] }}" selected="selected">{{ alexa_capability['name'] }}</option>
                 {% else %}
-                <option id="{{ alexa_interface['id'] }}">{{ alexa_interface['name'] }}</option>
+                <option id="{{ alexa_capability['id'] }}">{{ alexa_capability['name'] }}</option>
                 {% endif %}
                 {% endfor %}
-                <input name="alexa_interface_capabilities_{{ thing_interface['id'] }}" id="alexa_interface_capabilities_{{ thing_interface['id'] }}"
-                    value="{{ thing_interface['capabilities'] }}">
+                <input name="alexa_capbility_properties{{ thing_capability['id'] }}" id="alexa_capability_properties_{{ thing_capability['id'] }}"
+                    value="{{ thing_capability['properties'] }}">
             </select>
         </li>
         {% endfor %}
