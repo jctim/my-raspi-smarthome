@@ -18,11 +18,11 @@ def build_endpoint(endpoint):
     }
 
 
-def _build_capability(cb, props):
-    if cb == 'Alexa.PowerController' or cb == 'Alexa.Speaker' or cb == 'Alexa.EndpointHealth':
+def _build_capability(capability, props):
+    if capability in ['Alexa.PowerController', 'Alexa.Speaker', 'Alexa.EndpointHealth']:
         return {
             "type": "AlexaInterface",
-            "interface": cb,
+            "interface": capability,
             "version": "3",
             "properties": {
                 "supported": [{'name':  prop} for prop in props],
@@ -30,26 +30,24 @@ def _build_capability(cb, props):
                 "retrievable": True
             }
         }
-    elif cb == 'Alexa.InputController':
+    if capability in ['Alexa.InputController']:
         return {
             "type": "AlexaInterface",
-            "interface": cb,
+            "interface": capability,
             "version": "3",
             "inputs": [{'name': prop} for prop in props]
         }
-    elif cb == 'Alexa.PlaybackController':
+    if capability in ['Alexa.PlaybackController']:
         return {
             "type": "AlexaInterface",
-            "interface": cb,
+            "interface": capability,
             "version": "3",
             "properties": {},
-            "supportedOperations": [prop for prop in props],
-            "proactivelyReported": True,
-            "retrievable": True
+            "supportedOperations": [prop for prop in props]
         }
-    else:
-        return {
-            "type": "AlexaInterface",
-            "interface": cb,
-            "version": "3"
-        }
+    # default empty interface for unsupported capability
+    return {
+        "type": "AlexaInterface",
+        "interface": capability,
+        "version": "3"
+    }
