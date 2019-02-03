@@ -1,7 +1,7 @@
 import os
 import sys
 
-from pubnub.pnconfiguration import PNConfiguration
+from pubnub.pnconfiguration import PNConfiguration, PNReconnectionPolicy
 from pubnub.pubnub import PubNub
 
 from .__init__ import logger
@@ -13,6 +13,7 @@ def main():
     pnconfig.publish_key = os.environ.get('PUBNUB_PUB_KEY', '')
     pnconfig.subscribe_key = os.environ.get('PUBNUB_SUB_KEY', '')
     pnconfig.ssl = True
+    pnconfig.reconnect_policy = PNReconnectionPolicy.LINEAR
 
     pubnub = PubNub(pnconfig)
     pubnub.add_listener(AlexaCloudCallback())

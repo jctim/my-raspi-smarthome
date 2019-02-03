@@ -21,6 +21,7 @@ POWER_URL = HOST + '/api/power/{0}'
 INPUT_URL = HOST + '/api/input/{0}'
 SPEAKER_URL = HOST + '/api/speaker/{0}/{1}'
 
+# TODO: Reports - health etc.
 
 def lambda_handler(request, context):
     if request['directive']['header']['namespace'] == 'Alexa.Discovery' and (
