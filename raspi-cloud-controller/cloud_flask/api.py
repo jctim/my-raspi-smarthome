@@ -46,6 +46,7 @@ def api_ensure_amazon_user_id_exists(view):
                     app.logger.debug('[ensure_amazon_user_id] user_not_found')
                     return jsonify({'error': 'user_not_found'}), 403
                 else:
+                    g.user_id = user['id']
                     g.amazon_user_id = amazon_user_id
                     return view(**kwargs)
 
@@ -62,23 +63,16 @@ def api_ensure_thing_belongs_to_user(view):
             app.logger.debug('[ensure_thing_related_to_user] endpoint_id_not_provided')
             return jsonify({'error': 'endpoint_id_not_provided'}), 400
         else:
-            app.logger.debug('[ensure_thing_related_to_user] AMAZON_USER_ID: {}'.format(g.amazon_user_id))
-            user = db.find_user_by_amazon_id(g.amazon_user_id)
-            if user is None:
-                app.logger.debug('[ensure_thing_related_to_user] user_not_found')
-                return jsonify({'error': 'user_not_found'}), 403
+            endpoint_id = req_json['endpointId']
+            app.logger.debug('[ensure_thing_related_to_user] AMAZON_USER_ID: {}; USER_ID: {}; ENDPOINT_ID: {}'.format(
+                g.amazon_user_id, g.user_id, endpoint_id))
+            user_thing = db.find_thing_by_endpoint_id_and_user_id(endpoint_id, g.user_id)
+            if user_thing is None:
+                app.logger.debug('[ensure_thing_related_to_user] thing_not_found')
+                return jsonify({'error': 'thing_not_found'}), 403
             else:
-                user_id = user['id']
-                endpoint_id = req_json['endpointId']
-                app.logger.debug('[ensure_thing_related_to_user] ENDPOINT_ID: {}'.format(endpoint_id))
-                user_thing = db.find_thing_by_endpoint_id_and_user_id(endpoint_id, user_id)
-                if user_thing is None:
-                    app.logger.debug('[ensure_thing_related_to_user] thing_not_found')
-                    return jsonify({'error': 'thing_not_found'}), 403
-                else:
-                    g.user_id = user_id
-                    g.endpoint_id = endpoint_id
-                    return view(**kwargs)
+                g.endpoint_id = endpoint_id
+                return view(**kwargs)
 
     return wrapped_view
 
