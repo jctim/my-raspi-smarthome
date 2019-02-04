@@ -11,10 +11,10 @@ DEVICE_IP = os.environ.get('DEVICE_TV_IP', '192.168.1.97')
 TV_API_URL = 'http://{ip}:1925/1/{cmd}'.format(ip=DEVICE_IP, cmd='{cmd}')
 
 # Refer to https://www.raspberrypi.org/forums/viewtopic.php?f=29&t=53481
-CEC_CMD: str = 'echo "{}" | cec-client RPI -s -d 1'
+CEC_CMD = 'echo "{}" | cec-client RPI -s -d 1'
 
 # Refer to http://www.cec-o-matic.com
-TX_CMD: Dict[str, Dict[str, List[str]]] = {
+TX_CMD = {
     'power': {
         'on': ['tx 10:04'],
         'off': ['tx 10:36']
@@ -27,7 +27,7 @@ TX_CMD: Dict[str, Dict[str, List[str]]] = {
     }
 }
 
-HDMI_NAMES: Dict[str, List[str]] = {
+HDMI_NAMES = {
     'hdmi1': ['HDMI 1', 'ANDROID', 'ANDROID TV', 'MIBOX'],
     'hdmi2': ['HDMI 2', 'XBOX'],
     'hdmi3': ['HDMI 3', 'APPLE', 'APPLE TV'],

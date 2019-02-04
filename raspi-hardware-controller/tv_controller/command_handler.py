@@ -39,7 +39,7 @@ def handle_source(source: str) -> None:
 
 
 def _get_api_volume() -> Union[Tuple[bool, int, int], None]:
-    r: Response = requests.get(TV_API_URL.format(cmd='audio/volume'))
+    r = requests.get(TV_API_URL.format(cmd='audio/volume'))
     if r.status_code == 200:
         rjson = r.json()
         current_muted = bool(rjson['muted'])
@@ -58,7 +58,6 @@ def handle_volume(volume_type: str, volume_value: str, pubnub: PubNub) -> None:
 
     (muted, current_volume, max_volume) = api_volume
 
-    r: Response
     if volume_type == 'abs':
         new_value = min(int(volume_value), max_volume)
         r = requests.post(TV_API_URL.format(cmd='audio/volume'), json={"current": new_value})

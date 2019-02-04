@@ -1,3 +1,4 @@
 pubnub==4.1.2
 requests==2.21.0
-typing==3.6.6 # raspberry part run on python 3.4, need to install this module
+# uncomment if you have raspberry jessie: it has python 3.4, that's why need to install this module
+# typing==3.6.6 
