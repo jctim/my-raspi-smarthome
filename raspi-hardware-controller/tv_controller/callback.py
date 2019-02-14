@@ -5,7 +5,7 @@ from pubnub.models.consumer.pubsub import (PNMessageResult,
                                            PNPresenceEventResult)
 from pubnub.pubnub import PubNub
 
-from .__init__ import DEVICE_ID, logger
+from . import DEVICE_ID, logger
 from .command_handler import handle_control_command
 
 

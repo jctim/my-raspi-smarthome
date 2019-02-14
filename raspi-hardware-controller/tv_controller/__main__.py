@@ -4,7 +4,7 @@ import sys
 from pubnub.pnconfiguration import PNConfiguration, PNReconnectionPolicy
 from pubnub.pubnub import PubNub
 
-from .__init__ import logger
+from . import logger
 from .callback import AlexaCloudCallback
 
 

@@ -9,7 +9,7 @@ import requests
 from requests.models import Response
 from pubnub.pubnub import PubNub
 
-from .__init__ import CEC_CMD, HDMI_NAMES, TV_API_URL, TX_CMD, DEVICE_ID, logger, str_to_bool
+from . import CEC_CMD, HDMI_NAMES, TV_API_URL, TX_CMD, DEVICE_ID, logger, str_to_bool
 
 # TODO think about how to deploy on RPI.
 
