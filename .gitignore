@@ -18,4 +18,5 @@ build/
 *.egg-info/
 
 .env
+travis_rsa.pub
 instance/
