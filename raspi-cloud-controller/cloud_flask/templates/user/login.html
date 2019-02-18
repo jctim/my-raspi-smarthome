@@ -32,7 +32,7 @@
   document.getElementById('LoginWithAmazon').onclick = function () {
     options = { scope: 'profile', response_type: 'code' };
     amazon.Login.authorize(options,
-      '{{ request.url_root }}user/handle_login');
+      '{{ url_for('user.handle_login', _external=True, _scheme='https') }}');
     return false;
   };
 </script>
