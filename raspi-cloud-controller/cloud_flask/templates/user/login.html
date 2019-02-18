@@ -32,7 +32,7 @@
   document.getElementById('LoginWithAmazon').onclick = function () {
     options = { scope: 'profile', response_type: 'code' };
     amazon.Login.authorize(options,
-      '***REMOVED***/user/handle_login');
+      '{{ request.url_root }}user/handle_login');
     return false;
   };
 </script>
