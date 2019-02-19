@@ -1,4 +1,3 @@
-
 def build_endpoint(endpoint):
     capabilities = [_build_capability(cb, props) for cb, props in endpoint['capabilities'].items()]
     return {
@@ -10,9 +9,9 @@ def build_endpoint(endpoint):
         "cookie": {
             # TODO: why do I need those tags?
             "key1": "arbitrary key/value pairs for skill to reference this endpoint.",
-                    "key2": "There can be multiple entries",
-                    "key3": "but they should only be used for reference purposes.",
-                    "key4": "This is not a suitable place to maintain current endpoint state."
+            "key2": "There can be multiple entries",
+            "key3": "but they should only be used for reference purposes.",
+            "key4": "This is not a suitable place to maintain current endpoint state."
         },
         "capabilities": capabilities
     }
@@ -25,7 +24,7 @@ def _build_capability(capability, props):
             "interface": capability,
             "version": "3",
             "properties": {
-                "supported": [{'name':  prop} for prop in props],
+                "supported": [{'name': prop} for prop in props],
                 "proactivelyReported": True,
                 "retrievable": True
             }

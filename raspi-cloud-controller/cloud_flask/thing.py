@@ -1,12 +1,5 @@
-import functools
-import json
-import time
-
-import requests
 from flask import Blueprint
-from flask import current_app as app
-from flask import (flash, g, jsonify, redirect, render_template, request,
-                   session, url_for)
+from flask import (g, render_template)
 
 from . import db
 from .common import (ensure_thing_belongs_to_user, load_logged_in_user,

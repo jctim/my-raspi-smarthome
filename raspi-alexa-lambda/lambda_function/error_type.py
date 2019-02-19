@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class ErrorType(Enum):
     ALREADY_IN_OPERATION = 1
     ENDPOINT_UNREACHABLE = 2

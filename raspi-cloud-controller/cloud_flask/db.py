@@ -122,9 +122,11 @@ def find_thing_capabilities_by_id(id: int) -> List[sqlite3.Row]:
         INNER JOIN alexa_capability ac ON ac.id = tacp.alexa_capability_id \
         WHERE tacp.thing_id = ?', (id,)).fetchall()
 
+
 def get_all_categories() -> List[sqlite3.Row]:
     db = get_db()
     return db.execute('SELECT id, name FROM alexa_category').fetchall()
+
 
 def get_all_capabilities() -> List[sqlite3.Row]:
     db = get_db()

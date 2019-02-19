@@ -1,6 +1,5 @@
-from typing import Dict, List
-import os
 import logging
+import os
 
 # Device id - is used as endpoint_id in cloud_controller
 DEVICE_ID = os.environ.get('DEVICE_TV_ID', 'tv-01')
@@ -33,7 +32,6 @@ HDMI_NAMES = {
     'hdmi3': ['HDMI 3', 'APPLE', 'APPLE TV'],
     'hdmi4': ['HDMI 4', 'RASPBERRY', 'RASPBERRY PI', 'CONTROLLER']
 }
-
 
 FORMAT = '%(asctime)-15s %(message)s'
 

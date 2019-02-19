@@ -1,24 +1,21 @@
-from queue import Queue
 import functools
 import json
 import time
+from queue import Queue
 
 import requests
 from flask import Blueprint
 from flask import current_app as app
-from flask import (flash, g, jsonify, redirect, render_template, request,
-                   session, url_for)
-from pubnub.pnconfiguration import PNConfiguration
-from pubnub.callbacks import SubscribeCallback
-from pubnub.structures import Envelope
-from pubnub.models.consumer.common import PNStatus
-from pubnub.models.consumer.pubsub import (PNMessageResult, PNPublishResult,
-                                           PNPresenceEventResult)
-from pubnub.pubnub import PubNub
-
+from flask import (g, jsonify, request)
+from pubnub.callbacks import SubscribeCallback  # type:ignore
+from pubnub.models.consumer.common import PNStatus  # type:ignore
+from pubnub.models.consumer.pubsub import (PNMessageResult, PNPresenceEventResult)  # type:ignore
+from pubnub.pnconfiguration import PNConfiguration  # type:ignore
+from pubnub.pubnub import PubNub  # type:ignore
+from pubnub.structures import Envelope  # type:ignore
 
 from . import db
-from .common import AMAZON_PROFILE_REQUEST, AMAZON_TOKEN_REQUEST
+from .common import AMAZON_PROFILE_REQUEST
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -85,31 +82,24 @@ def discover():
     return jsonify({'endpoints': endpoints})
 
 
-def _build_endpoint(thing_id):
-    thing = db.find_thing_by_id(thing_id)
-    capabilities = db.find_thing_capabilities_by_id(thing_id)
-    return {
-        "endpointId": thing['endpoint_id'],
-        "friendlyName": thing['friendly_name'],
-        "description": thing['description'],
-        "manufacturerName": thing['manufacturer_name'],
-        "displayCategories": [
-            thing['alexa_category_name']
-        ],
-        'capabilities': {capability['name']: [c.strip() for c in capability['properties'].split(',')] for capability in capabilities}
-    }
-
-
 @bp.route('/power/<command>', methods=['POST'])
 @api_ensure_amazon_user_id_exists
 @api_ensure_thing_belongs_to_user
 def power(command):
     pubnub = _create_pubnub()
     if command == 'TurnOn':
-        pubnub.publish().channel('alexa').message({"requester": "Alexa", "device": g.endpoint_id, "power": "on"}).sync()
+        pubnub.publish().channel('alexa').message({
+            "requester": "Alexa",
+            "device": g.endpoint_id,
+            "power": "on"
+        }).sync()
         result = 'ON'
     elif command == 'TurnOff':
-        pubnub.publish().channel('alexa').message({"requester": "Alexa", "device": g.endpoint_id, "power": "off"}).sync()
+        pubnub.publish().channel('alexa').message({
+            "requester": "Alexa",
+            "device": g.endpoint_id,
+            "power": "off"
+        }).sync()
         result = 'OFF'
     else:
         return jsonify({'error': 'unsupported_command'}), 400
@@ -122,10 +112,55 @@ def power(command):
 @api_ensure_thing_belongs_to_user
 def input(source):
     pubnub = _create_pubnub()
-    pubnub.publish().channel('alexa').message({"requester": "Alexa", "device": g.endpoint_id, "source": source}).sync()
+    pubnub.publish().channel('alexa').message({
+        "requester": "Alexa",
+        "device": g.endpoint_id,
+        "source": source
+    }).sync()
     result = source
 
     return jsonify({'result': {'input': result}, 'time': _get_utc_timestamp()})
+
+
+@bp.route('/speaker/<command>/<value>', methods=['POST'])
+@api_ensure_amazon_user_id_exists
+@api_ensure_thing_belongs_to_user
+def speaker(command, value):
+    pubnub = _create_pubnub()
+    pubnub.subscribe().channels('alexa_response').with_presence().execute()  # TODO: make pubnub-wrapper
+    if command == 'SetVolume':
+        e: Envelope = pubnub.publish().channel('alexa').message({
+            "requester": "Alexa",
+            "device": g.endpoint_id,
+            "volume": value,
+            "type": "abs"
+        }).sync()
+        result = _wait_for_response(pubnub, e.status.uuid)  # FIXME: add timeout
+    elif command == 'AdjustVolume':
+        e: Envelope = pubnub.publish().channel('alexa').message({
+            "requester": "Alexa",
+            "device": g.endpoint_id,
+            "volume": value,
+            "type": "rel"
+        }).sync()
+        result = _wait_for_response(pubnub, e.status.uuid)  # FIXME: add timeout
+    elif command == 'SetMute':
+        e: Envelope = pubnub.publish().channel('alexa').message({
+            "requester": "Alexa",
+            "device": g.endpoint_id,
+            "volume": value,
+            "type": "mute"
+        }).sync()
+        result = _wait_for_response(pubnub, e.status.uuid)  # FIXME: add timeout
+    else:
+        return jsonify({'error': 'unsupported_command'}), 400
+
+    pubnub.unsubscribe().channels('alexa_response')
+
+    if 'error' in result:
+        return jsonify({'error': 'unknown_error'}), 500
+
+    return jsonify({'result': {'volume': result['volume'], 'muted': result['muted']}, 'time': _get_utc_timestamp()})
 
 
 # TODO: research for make async operation as sync in Python
@@ -148,8 +183,9 @@ class AlexaResponseCallback(SubscribeCallback):
 
         self.q.put(message.message)
 
+
 # TODO: research for make async operation as sync in Python
-def wait_for_response(pubnub: PubNub, uuid: str):
+def _wait_for_response(pubnub: PubNub, uuid: str):
     q: Queue = Queue()
     response_listener = AlexaResponseCallback(q, uuid)
     pubnub.add_listener(response_listener)
@@ -158,30 +194,19 @@ def wait_for_response(pubnub: PubNub, uuid: str):
     return message
 
 
-@bp.route('/speaker/<command>/<value>', methods=['POST'])
-@api_ensure_amazon_user_id_exists
-@api_ensure_thing_belongs_to_user
-def speaker(command, value):
-    pubnub = _create_pubnub()
-    pubnub.subscribe().channels('alexa_response').with_presence().execute()  # TODO: make pubnub-wrapper
-    if command == 'SetVolume':
-        e: Envelope = pubnub.publish().channel('alexa').message({"requester": "Alexa", "device": g.endpoint_id, "volume": value, "type": "abs"}).sync()
-        result = wait_for_response(pubnub, e.status.uuid)  # FIXME: add timeout
-    elif command == 'AdjustVolume':
-        e: Envelope = pubnub.publish().channel('alexa').message({"requester": "Alexa", "device": g.endpoint_id, "volume": value, "type": "rel"}).sync()
-        result = wait_for_response(pubnub, e.status.uuid)  # FIXME: add timeout
-    elif command == 'SetMute':
-        e: Envelope = pubnub.publish().channel('alexa').message({"requester": "Alexa", "device": g.endpoint_id, "volume": value, "type": "mute"}).sync()
-        result = wait_for_response(pubnub, e.status.uuid)  # FIXME: add timeout
-    else:
-        return jsonify({'error': 'unsupported_command'}), 400
-
-    pubnub.unsubscribe().channels('alexa_response')
-
-    if 'error' in result:
-        return jsonify({'error': 'unknown_error'}), 500
-
-    return jsonify({'result': {'volume': result['volume'], 'muted': result['muted']}, 'time': _get_utc_timestamp()})
+def _build_endpoint(thing_id):
+    thing = db.find_thing_by_id(thing_id)
+    capabilities = db.find_thing_capabilities_by_id(thing_id)
+    return {
+        "endpointId": thing['endpoint_id'],
+        "friendlyName": thing['friendly_name'],
+        "description": thing['description'],
+        "manufacturerName": thing['manufacturer_name'],
+        "displayCategories": [
+            thing['alexa_category_name']
+        ],
+        'capabilities': {capability['name']: [c.strip() for c in capability['properties'].split(',')] for capability in capabilities}
+    }
 
 
 def _create_pubnub():

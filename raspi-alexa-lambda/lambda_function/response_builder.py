@@ -1,6 +1,6 @@
 import json
 import uuid
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, Union
 
 from error_type import ErrorType
 
@@ -44,7 +44,6 @@ def build_power_controller_response(power_value: str, time: str,
 
 def build_input_controller_response(input_value: str, time: str,
                                     correlation_token: str, endpoint_id: str) -> Dict[str, Any]:
-
     response = {
         "context": {
             "properties": [_property('Alexa.InputController', 'input', input_value, time)]
@@ -63,7 +62,6 @@ def build_input_controller_response(input_value: str, time: str,
 
 def build_speaker_controller_response(volume_value: str, muted_value: str, time: str,
                                       correlation_token: str, endpoint_id: str) -> Dict[str, Any]:
-
     response = {
         "context": {
             "properties": [
@@ -101,7 +99,7 @@ def build_error_response(error_type: ErrorType, error_message: str,
     return response
 
 
-def _header(correlation_token: str, name: str = 'Response')-> Dict[str, str]:
+def _header(correlation_token: str, name: str = 'Response') -> Dict[str, str]:
     return {
         "namespace": "Alexa",
         "name": name,

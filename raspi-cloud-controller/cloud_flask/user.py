@@ -1,11 +1,7 @@
-
-import json
-import time
-
 import requests
 from flask import Blueprint
 from flask import current_app as app
-from flask import (flash, g, jsonify, redirect, render_template, request,
+from flask import (flash, g, redirect, render_template, request,
                    session, url_for)
 
 from .common import (AMAZON_PROFILE_REQUEST, AMAZON_TOKEN_REQUEST,

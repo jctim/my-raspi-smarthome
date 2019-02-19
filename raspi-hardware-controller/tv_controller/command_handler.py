@@ -1,15 +1,13 @@
 #! /usr/bin/env python3
 
 import os
-import subprocess
-import sys
-from typing import Any, Dict, List, Tuple, Union
+from typing import Dict, List, Tuple, Union
 
 import requests
-from requests.models import Response
 from pubnub.pubnub import PubNub
 
 from . import CEC_CMD, HDMI_NAMES, TV_API_URL, TX_CMD, DEVICE_ID, logger, str_to_bool
+
 
 # TODO think about how to deploy on RPI.
 
@@ -45,7 +43,7 @@ def _get_api_volume() -> Union[Tuple[bool, int, int], None]:
         current_muted = bool(rjson['muted'])
         current_volume = int(rjson['current'])
         max_volume = int(rjson['max'])
-        return (current_muted, current_volume, max_volume)
+        return current_muted, current_volume, max_volume
 
     return None
 
@@ -62,28 +60,55 @@ def handle_volume(volume_type: str, volume_value: str, pubnub: PubNub) -> None:
         new_value = min(int(volume_value), max_volume)
         r = requests.post(TV_API_URL.format(cmd='audio/volume'), json={"current": new_value})
         if r.status_code == 200:
-            pubnub.publish().channel('alexa_response').message({"requester": "Device", "device": DEVICE_ID, "muted": str(muted).lower(), "volume": new_value}).sync()
+            pubnub.publish().channel('alexa_response').message({
+                "requester": "Device",
+                "device": DEVICE_ID,
+                "muted": str(muted).lower(),
+                "volume": new_value
+            }).sync()
         else:
-            logger.debug('Unsuccessull operation: {}'.format(r.status_code))
-            pubnub.publish().channel('alexa_response').message({"requester": "Device", "device": DEVICE_ID, "error": "an error occured during executing operation"}).sync()
+            logger.debug('Unsuccessful operation: {}'.format(r.status_code))
+            pubnub.publish().channel('alexa_response').message({
+                "requester": "Device",
+                "device": DEVICE_ID,
+                "error": "an error occurred during executing operation"
+            }).sync()
 
     elif volume_type == 'rel':
         new_value = max(1, min(current_volume + int(volume_value), max_volume))
         r = requests.post(TV_API_URL.format(cmd='audio/volume'), json={"current": new_value})
         if r.status_code == 200:
-            pubnub.publish().channel('alexa_response').message({"requester": "Device", "device": DEVICE_ID, "muted": str(muted).lower(), "volume": new_value}).sync()
+            pubnub.publish().channel('alexa_response').message({
+                "requester": "Device",
+                "device": DEVICE_ID,
+                "muted": str(muted).lower(),
+                "volume": new_value
+            }).sync()
         else:
-            logger.debug('Unsuccessull operation: {}'.format(r.status_code))
-            pubnub.publish().channel('alexa_response').message({"requester": "Device", "device": DEVICE_ID, "error": "an error occured during executing operation"}).sync()
+            logger.debug('Unsuccessful operation: {}'.format(r.status_code))
+            pubnub.publish().channel('alexa_response').message({
+                "requester": "Device",
+                "device": DEVICE_ID,
+                "error": "an error occurred during executing operation"
+            }).sync()
 
     elif volume_type == 'mute':
         new_value = str_to_bool(volume_value)
         r = requests.post(TV_API_URL.format(cmd='audio/volume'), json={"muted": new_value})
         if r.status_code == 200:
-            pubnub.publish().channel('alexa_response').message({"requester": "Device", "device": DEVICE_ID, "muted": str(new_value).lower(), "volume": current_volume}).sync()
+            pubnub.publish().channel('alexa_response').message({
+                "requester": "Device",
+                "device": DEVICE_ID,
+                "muted": str(new_value).lower(),
+                "volume": current_volume
+            }).sync()
         else:
-            logger.debug('Unsuccessull operation: {}'.format(r.status_code))
-            pubnub.publish().channel('alexa_response').message({"requester": "Device", "device": DEVICE_ID, "error": "an error occured during executing operation"}).sync()
+            logger.debug('Unsuccessful operation: {}'.format(r.status_code))
+            pubnub.publish().channel('alexa_response').message({
+                "requester": "Device",
+                "device": DEVICE_ID,
+                "error": "an error occurred during executing operation"
+            }).sync()
 
     else:
         logger.debug('Unknown volume type: {}'.format(volume_type))

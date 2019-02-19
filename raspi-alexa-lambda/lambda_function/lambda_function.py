@@ -10,9 +10,9 @@ from response_builder import (build_discovery_response,
                               build_speaker_controller_response)
 
 try:
-    from botocore.vendored import requests
+    from botocore.vendored import requests  # type:ignore
 except ImportError:
-    import requests # type: ignore
+    import requests  # type:ignore
 
 HOST = os.environ['HOST']
 
@@ -21,12 +21,13 @@ POWER_URL = HOST + '/api/power/{0}'
 INPUT_URL = HOST + '/api/input/{0}'
 SPEAKER_URL = HOST + '/api/speaker/{0}/{1}'
 
+
 # TODO: Reports - health etc.
 
 def lambda_handler(request, context):
     if request['directive']['header']['namespace'] == 'Alexa.Discovery' and (
             request['directive']['header']['name'] == 'Discover'):
-        print("[DEBUG]", "Alexa.Discovery request",  json.dumps(request))
+        print("[DEBUG]", "Alexa.Discovery request", json.dumps(request))
         return handle_discovery(request, context)
 
     if request['directive']['header']['namespace'] == 'Alexa.PowerController' and (
