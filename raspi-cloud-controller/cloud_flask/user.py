@@ -33,7 +33,7 @@ def handle_login():
 
     request_args = request.args
     if 'error' in request_args:
-        app.logger.debug('{}: {}'.format(request_args['error'], request_args['error_description']))
+        app.logger.debug('%s: %s', request_args['error'], request_args['error_description'])
         error = request_args['error_description']
     elif 'code' in request_args:
         code = request_args['code'],
@@ -48,7 +48,7 @@ def handle_login():
         auth_code_json = auth_code_response.json()
 
         if auth_code_response.status_code != 200:
-            app.logger.debug('{}: {}'.format(auth_code_json['error'], auth_code_json['error_description']))
+            app.logger.debug('%s: %s', auth_code_json['error'], auth_code_json['error_description'])
             error = auth_code_json['error_description']
         else:
             auth_code_json = auth_code_response.json()
@@ -58,7 +58,7 @@ def handle_login():
             profile_json = profile_response.json()
 
             if profile_response.status_code != 200:
-                app.logger.debug('{}: {}'.format(profile_json['error'], profile_json['error_description']))
+                app.logger.debug('%s: %s', profile_json['error'], profile_json['error_description'])
                 error = profile_json['error_description']
             else:
                 amazon_id = profile_json['user_id']

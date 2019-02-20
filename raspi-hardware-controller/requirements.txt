@@ -1,4 +1,4 @@
-pubnub==4.1.2
 requests==2.21.0
+paho-mqtt==1.4.0
 # uncomment if you have raspberry jessie: it has python 3.4, that's why need to install this module
 # typing==3.6.6 

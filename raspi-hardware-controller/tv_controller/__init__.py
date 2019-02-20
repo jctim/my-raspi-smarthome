@@ -9,6 +9,10 @@ DEVICE_IP = os.environ.get('DEVICE_TV_IP', '192.168.1.97')
 # API URL used to make REST calls to JointSpace API of the TV
 TV_API_URL = 'http://{ip}:1925/1/{cmd}'.format(ip=DEVICE_IP, cmd='{cmd}')
 
+# MQTT topics
+ALEXA_CONTROL_TOPIC = 'alexa/device/{}/control'.format(DEVICE_ID)
+ALEXA_REPLY_TOPIC = 'alexa/device/{}/reply'.format(DEVICE_ID)
+
 # Refer to https://www.raspberrypi.org/forums/viewtopic.php?f=29&t=53481
 CEC_CMD = 'echo "{}" | cec-client RPI -s -d 1'
 
@@ -42,4 +46,4 @@ logger.setLevel(logging.DEBUG)
 
 
 def str_to_bool(s: str) -> bool:
-    return s.lower() in ("yes", "true", "1")
+    return s.lower() in ('yes', 'true', '1')

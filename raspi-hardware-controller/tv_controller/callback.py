@@ -1,33 +1,29 @@
-from pubnub.callbacks import SubscribeCallback
-from pubnub.enums import PNStatusCategory
-from pubnub.models.consumer.common import PNStatus
-from pubnub.models.consumer.pubsub import (PNMessageResult,
-                                           PNPresenceEventResult)
-from pubnub.pubnub import PubNub
+import json
+from typing import Any
 
-from . import DEVICE_ID, logger
-from .command_handler import handle_control_command
+import paho.mqtt.client as mqtt  # type: ignore
+
+from . import ALEXA_CONTROL_TOPIC, ALEXA_REPLY_TOPIC, logger
+from . import command_handler
 
 
-class AlexaCloudCallback(SubscribeCallback):
+def on_mqtt_connect(client: mqtt.Client, userdata: Any, flags: dict, rc: int):
+    logger.debug("Connected with result code=%d, flags=%s", rc, flags)
 
-    def status(self, pubnub: PubNub, status: PNStatus) -> None:
-        logger.debug('status: {}'.format(vars(status)))
-        if status.category == PNStatusCategory.PNUnexpectedDisconnectCategory:
-            pubnub.reconnect()
-        elif status.category == PNStatusCategory.PNTimeoutCategory:
-            pubnub.reconnect()
+    client.subscribe(ALEXA_CONTROL_TOPIC)
+    # client.subscribe(ALEXA_REPLY_TOPIC)
 
-    def presence(self, pubnub: PubNub, presence: PNPresenceEventResult) -> None:
-        logger.debug('presence: {}'.format(vars(presence)))
 
-    def message(self, pubnub: PubNub, message: PNMessageResult) -> None:
-        logger.debug('message: {}'.format(vars(message)))
+def on_mqtt_message(client: mqtt.Client, userdata: Any, message: mqtt.MQTTMessage):
+    logger.debug("message received: topic=%s, qos=%d, retain flag=%d, payload=%s",
+                 message.topic, message.qos, message.retain, message.payload)
 
-        if message.channel != 'alexa':
-            return
+    if message.topic == ALEXA_CONTROL_TOPIC:
+        try:
+            json_command = json.loads(message.payload.decode("utf-8"))
+            command_handler.handle_control_command(json_command, client)
+        except ValueError as err:
+            logger.error("Cannot load json: %s", err)
 
-        command = message.message
-        if ('requester' in command and command['requester'] == 'Alexa'
-                and 'device' in command and command['device'] == DEVICE_ID):
-            handle_control_command(command, pubnub)
+    if message.topic == ALEXA_REPLY_TOPIC:
+        pass
