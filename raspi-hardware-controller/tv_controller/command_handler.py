@@ -1,6 +1,6 @@
 import json
 import os
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Tuple, Union, Optional
 
 import paho.mqtt.client as mqtt  # type: ignore
 import requests
@@ -79,32 +79,32 @@ def handle_volume(volume_type: str, volume_value: str, **kwargs) -> None:
         new_value = min(int(volume_value), max_volume)
         r = requests.post(TV_API_URL.format(cmd='audio/volume'), json={"current": new_value})
         if r.status_code == 200:
-            _reply_with_values({"muted": str(muted).lower(), "volume": new_value})
+            _reply_with_values({"muted": str(muted).lower(), "volume": new_value}, **kwargs)
         else:
             logger.debug('Unsuccessful operation: %d', r.status_code)
-            _reply_with_error("an error occurred during executing operation")
+            _reply_with_error("an error occurred during executing operation", **kwargs)
 
     elif volume_type == 'rel':
         new_value = max(1, min(current_volume + int(volume_value), max_volume))
         r = requests.post(TV_API_URL.format(cmd='audio/volume'), json={"current": new_value})
         if r.status_code == 200:
-            _reply_with_values({"muted": str(muted).lower(), "volume": new_value})
+            _reply_with_values({"muted": str(muted).lower(), "volume": new_value}, **kwargs)
         else:
             logger.debug('Unsuccessful operation: %d', r.status_code)
-            _reply_with_error("an error occurred during executing operation")
+            _reply_with_error("an error occurred during executing operation", **kwargs)
 
     elif volume_type == 'mute':
         new_value = str_to_bool(volume_value)
         r = requests.post(TV_API_URL.format(cmd='audio/volume'), json={"muted": new_value})
         if r.status_code == 200:
-            _reply_with_values({"muted": str(new_value).lower(), "volume": current_volume})
+            _reply_with_values({"muted": str(new_value).lower(), "volume": current_volume}, **kwargs)
         else:
             logger.debug('Unsuccessful operation: %d', r.status_code)
-            _reply_with_error("an error occurred during executing operation")
+            _reply_with_error("an error occurred during executing operation", **kwargs)
 
     else:
         logger.debug('Unknown volume type: %s', volume_type)
-        _reply_with_error("unknown volume type")
+        _reply_with_error("unknown volume type", **kwargs)
 
 
 def _exec_cec_cmd(tx_cmd: List[str]) -> None:
@@ -131,17 +131,21 @@ def _get_api_volume() -> Union[Tuple[bool, int, int], None]:
     return None
 
 
-def _reply_with_values(values: Dict[str, Union[str, int]], **kwargs) -> mqtt.MQTTMessageInfo:  # client: mqtt.Client, uuid: str
+def _reply_with_values(values: Dict[str, Union[str, int]], **kwargs) -> Optional[mqtt.MQTTMessageInfo]:  # client: mqtt.Client, uuid: str
     client: mqtt.Client = kwargs.get('client')
     if client is not None:
         uuid = kwargs['uuid']
         qos = int(kwargs.get('qos') or 1)
         return client.publish(ALEXA_REPLY_TOPIC, json.dumps(dict({"uuid": uuid}, **values)), qos)
 
+    return None
 
-def _reply_with_error(error_desc: str, **kwargs) -> mqtt.MQTTMessageInfo:  # client: mqtt.Client, uuid: str
+
+def _reply_with_error(error_desc: str, **kwargs) -> Optional[mqtt.MQTTMessageInfo]:  # client: mqtt.Client, uuid: str
     client: mqtt.Client = kwargs.get('client')
     if client is not None:
         uuid = kwargs['uuid']
         qos = int(kwargs.get('qos') or 1)
         return client.publish(ALEXA_REPLY_TOPIC, json.dumps({"uuid": uuid, "error": error_desc}), qos)
+
+    return None

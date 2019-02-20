@@ -1,21 +1,23 @@
 import functools
 import json
+import logging
 import time
-from queue import Queue
+import uuid
+from queue import Queue, Empty
+from typing import Tuple, Dict, Union, Optional, Any
 
+import paho.mqtt.client as mqtt  # type: ignore
 import requests
 from flask import Blueprint
-from flask import current_app as app
 from flask import (g, jsonify, request)
-from pubnub.callbacks import SubscribeCallback  # type:ignore
-from pubnub.models.consumer.common import PNStatus  # type:ignore
-from pubnub.models.consumer.pubsub import (PNMessageResult, PNPresenceEventResult)  # type:ignore
-from pubnub.pnconfiguration import PNConfiguration  # type:ignore
-from pubnub.pubnub import PubNub  # type:ignore
-from pubnub.structures import Envelope  # type:ignore
+from flask import logging as flask_logging
 
-from . import db
-from .common import AMAZON_PROFILE_REQUEST
+from . import db, mqtt_client
+from .common import AMAZON_PROFILE_REQUEST, ALEXA_CONTROL_TOPIC, ALEXA_REPLY_TOPIC
+
+_LOGGER = logging.getLogger(__name__)
+_LOGGER.addHandler(flask_logging.default_handler)
+_LOGGER.setLevel(logging.DEBUG)
 
 bp = Blueprint('api', __name__, url_prefix='/api')
 
@@ -24,23 +26,23 @@ def api_ensure_amazon_user_id_exists(view):
     @functools.wraps(view)
     def wrapped_view(**kwargs):
         req_json = request.get_json()
-        app.logger.debug('[ensure_amazon_user_id] json: %s', json.dumps(req_json))
+        _LOGGER.debug('[ensure_amazon_user_id] json: %s', json.dumps(req_json))
 
         if 'accessToken' not in req_json:
-            app.logger.debug('[ensure_amazon_user_id] access_token_not_provided')
+            _LOGGER.debug('[ensure_amazon_user_id] access_token_not_provided')
             return jsonify({'error': 'access_token_not_provided'}), 400
         else:
             profile_response = requests.get(AMAZON_PROFILE_REQUEST.format(req_json['accessToken']))
             profile_json = profile_response.json()
 
             if profile_response.status_code != 200:
-                app.logger.debug('[ensure_amazon_user_id] %s', profile_json['error'])
+                _LOGGER.debug('[ensure_amazon_user_id] %s', profile_json['error'])
                 return jsonify({'error': profile_json['error']}), 403
             else:
                 amazon_user_id = profile_json['user_id']
                 user = db.find_user_by_amazon_id(amazon_user_id)
                 if user is None:
-                    app.logger.debug('[ensure_amazon_user_id] user_not_found')
+                    _LOGGER.debug('[ensure_amazon_user_id] user_not_found')
                     return jsonify({'error': 'user_not_found'}), 403
                 else:
                     g.user_id = user['id']
@@ -54,18 +56,18 @@ def api_ensure_thing_belongs_to_user(view):
     @functools.wraps(view)
     def wrapped_view(**kwargs):
         req_json = request.get_json()
-        app.logger.debug('[ensure_thing_related_to_user] json: %s', json.dumps(req_json))
+        _LOGGER.debug('[ensure_thing_related_to_user] json: %s', json.dumps(req_json))
 
         if 'endpointId' not in req_json:
-            app.logger.debug('[ensure_thing_related_to_user] endpoint_id_not_provided')
+            _LOGGER.debug('[ensure_thing_related_to_user] endpoint_id_not_provided')
             return jsonify({'error': 'endpoint_id_not_provided'}), 400
         else:
             endpoint_id = req_json['endpointId']
-            app.logger.debug('[ensure_thing_related_to_user] AMAZON_USER_ID: %s; USER_ID: %s; ENDPOINT_ID: %s',
-                g.amazon_user_id, g.user_id, endpoint_id)
+            _LOGGER.debug('[ensure_thing_related_to_user] AMAZON_USER_ID: %s; USER_ID: %s; ENDPOINT_ID: %s',
+                          g.amazon_user_id, g.user_id, endpoint_id)
             user_thing = db.find_thing_by_endpoint_id_and_user_id(endpoint_id, g.user_id)
             if user_thing is None:
-                app.logger.debug('[ensure_thing_related_to_user] thing_not_found')
+                _LOGGER.debug('[ensure_thing_related_to_user] thing_not_found')
                 return jsonify({'error': 'thing_not_found'}), 403
             else:
                 g.endpoint_id = endpoint_id
@@ -86,21 +88,14 @@ def discover():
 @api_ensure_amazon_user_id_exists
 @api_ensure_thing_belongs_to_user
 def power(command):
-    pubnub = _create_pubnub()
+    (client, _) = _get_mqtt_client()
+
     if command == 'TurnOn':
-        pubnub.publish().channel('alexa').message({
-            "requester": "Alexa",
-            "device": g.endpoint_id,
-            "power": "on"
-        }).sync()
-        result = 'ON'
+        (_, _) = _send_control_message_async(g.endpoint_id, {'power': 'on'}, client=client)
+        result = 'ON'  # TODO sync?
     elif command == 'TurnOff':
-        pubnub.publish().channel('alexa').message({
-            "requester": "Alexa",
-            "device": g.endpoint_id,
-            "power": "off"
-        }).sync()
-        result = 'OFF'
+        (_, _) = _send_control_message_async(g.endpoint_id, {'power': 'off'}, client=client)
+        result = 'OFF'  # TODO sync?
     else:
         return jsonify({'error': 'unsupported_command'}), 400
 
@@ -111,13 +106,10 @@ def power(command):
 @api_ensure_amazon_user_id_exists
 @api_ensure_thing_belongs_to_user
 def input(source):
-    pubnub = _create_pubnub()
-    pubnub.publish().channel('alexa').message({
-        "requester": "Alexa",
-        "device": g.endpoint_id,
-        "source": source
-    }).sync()
-    result = source
+    (client, _) = _get_mqtt_client()
+
+    (_, _) = _send_control_message_async(g.endpoint_id, {'source': source}, client=client)
+    result = source  # TODO sync?
 
     return jsonify({'result': {'input': result}, 'time': _get_utc_timestamp()})
 
@@ -126,72 +118,77 @@ def input(source):
 @api_ensure_amazon_user_id_exists
 @api_ensure_thing_belongs_to_user
 def speaker(command, value):
-    pubnub = _create_pubnub()
-    pubnub.subscribe().channels('alexa_response').with_presence().execute()  # TODO: make pubnub-wrapper
+    (client, scope) = _get_mqtt_client()
+
     if command == 'SetVolume':
-        e: Envelope = pubnub.publish().channel('alexa').message({
-            "requester": "Alexa",
-            "device": g.endpoint_id,
-            "volume": value,
-            "type": "abs"
-        }).sync()
-        result = _wait_for_response(pubnub, e.status.uuid)  # FIXME: add timeout
+        result = _send_control_message_sync(g.endpoint_id, {'volume': value, 'type': 'abs'}, client=client)
     elif command == 'AdjustVolume':
-        e: Envelope = pubnub.publish().channel('alexa').message({
-            "requester": "Alexa",
-            "device": g.endpoint_id,
-            "volume": value,
-            "type": "rel"
-        }).sync()
-        result = _wait_for_response(pubnub, e.status.uuid)  # FIXME: add timeout
+        result = _send_control_message_sync(g.endpoint_id, {'volume': value, 'type': 'rel'}, client=client)
     elif command == 'SetMute':
-        e: Envelope = pubnub.publish().channel('alexa').message({
-            "requester": "Alexa",
-            "device": g.endpoint_id,
-            "volume": value,
-            "type": "mute"
-        }).sync()
-        result = _wait_for_response(pubnub, e.status.uuid)  # FIXME: add timeout
+        result = _send_control_message_sync(g.endpoint_id, {'volume': value, 'type': 'mute'}, client=client)
     else:
         return jsonify({'error': 'unsupported_command'}), 400
 
-    pubnub.unsubscribe().channels('alexa_response')
-
     if 'error' in result:
-        return jsonify({'error': 'unknown_error'}), 500
+        return jsonify({'error': result['error']}), 500
 
     return jsonify({'result': {'volume': result['volume'], 'muted': result['muted']}, 'time': _get_utc_timestamp()})
 
 
-# TODO: research for make async operation as sync in Python
-class AlexaResponseCallback(SubscribeCallback):
+def _send_control_message_async(endpoint_id: str, values: Dict[str, Union[str, int]], **kwargs) -> Optional[Tuple[mqtt.MQTTMessageInfo, str]]:
+    m_uuid = str(kwargs.get('uuid') or _uuid())
+    qos = int(kwargs.get('qos') or 2)
+    client: mqtt.Client = kwargs.get('client')
 
-    def __init__(self, q, uuid):
-        self.q = q
-        self.uuid = uuid
+    if client is not None:
+        control_topic = ALEXA_CONTROL_TOPIC.format(endpoint_id)
 
-    def status(self, pubnub: PubNub, status: PNStatus) -> None:
-        print('status: {}'.format(vars(status)))
+        control_message = dict({"uuid": m_uuid}, **values)
+        _LOGGER.debug('sending message %s', control_message)
+        m_info = client.publish(control_topic, json.dumps(control_message), qos)
+        return m_info, m_uuid
 
-    def presence(self, pubnub: PubNub, presence: PNPresenceEventResult) -> None:
-        print('presence: {}'.format(vars(presence)))
+    return None
 
-    def message(self, pubnub: PubNub, message: PNMessageResult) -> None:
-        print('message: {}'.format(vars(message)))
-        if message.channel != 'alexa_response' and message.publisher != self.uuid:
+
+# TODO: add here async/await if possible
+def _send_control_message_sync(endpoint_id: str, values: Dict[str, Union[str, int]], **kwargs) -> Optional[Dict[str, Union[str, int]]]:
+    m_uuid = str(kwargs.get('uuid') or _uuid())
+    qos = int(kwargs.get('qos') or 2)
+    client: mqtt.Client = kwargs.get('client')
+    q: Queue[Dict[str, Union[str, int]]] = Queue()
+
+    def _on_message_inner(_client: mqtt.Client, _userdata: Any, message: mqtt.MQTTMessage) -> None:
+        _LOGGER.debug('got message %s from topic %s', message.payload, message.topic)
+        reply = json.loads(message.payload.decode("utf-8"))
+        if 'uuid' not in reply or reply['uuid'] != m_uuid:
             return
 
-        self.q.put(message.message)
+        q.put(reply)
 
+    if client is not None:
+        control_topic = ALEXA_CONTROL_TOPIC.format(endpoint_id)
+        reply_topic = ALEXA_REPLY_TOPIC.format(endpoint_id)
 
-# TODO: research for make async operation as sync in Python
-def _wait_for_response(pubnub: PubNub, uuid: str):
-    q: Queue = Queue()
-    response_listener = AlexaResponseCallback(q, uuid)
-    pubnub.add_listener(response_listener)
-    message = q.get()
-    pubnub.remove_listener(response_listener)
-    return message
+        client.subscribe(reply_topic)
+        client.message_callback_add(reply_topic, _on_message_inner)
+
+        control_message = dict({"uuid": m_uuid}, **values)
+        _LOGGER.debug('sending message %s', control_message)
+        client.publish(control_topic, json.dumps(control_message), qos).wait_for_publish()
+
+        try:
+            q_message = q.get(timeout=10)
+        except Empty:
+            _LOGGER.error("Got no reply at all")
+            q_message = {'error': 'no reply from client'}
+
+        client.message_callback_remove(reply_topic)
+        client.unsubscribe(reply_topic)
+
+        return q_message
+
+    return None
 
 
 def _build_endpoint(thing_id):
@@ -209,15 +206,16 @@ def _build_endpoint(thing_id):
     }
 
 
-def _create_pubnub():
-    keys = db.get_user_pubnub_keys(g.user_id)
+def _get_mqtt_client() -> Tuple[mqtt.Client, str]:
+    client = mqtt_client.get()
+    mqtt_user_scope = db.get_user_mqtt_user_scope(g.user_id)
 
-    pnconfig = PNConfiguration()
-    pnconfig.publish_key = keys[0]
-    pnconfig.subscribe_key = keys[1]
-    pnconfig.ssl = True
-    return PubNub(pnconfig)
+    return client, mqtt_user_scope
 
 
 def _get_utc_timestamp(seconds=None):
     return time.strftime("%Y-%m-%dT%H:%M:%S.00Z", time.gmtime(seconds))
+
+
+def _uuid() -> str:
+    return str(uuid.uuid4())

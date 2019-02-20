@@ -1,10 +1,8 @@
 import sqlite3
-from typing import List, Tuple
+from typing import List
 
 import click
-from flask import Flask
-from flask import current_app as app
-from flask import g
+from flask import Flask, g, current_app
 from flask.cli import with_appcontext
 
 
@@ -16,14 +14,14 @@ def init_app(app: Flask):
 def init_db() -> None:
     db = get_db()
 
-    with app.open_resource('schema.sql') as f:
+    with current_app.open_resource('schema.sql') as f:
         db.executescript(f.read().decode('utf8'))
 
 
 def get_db() -> sqlite3.Connection:
     if 'db' not in g:
         g.db = sqlite3.connect(
-            app.config['DATABASE'],
+            current_app.config['DATABASE'],
             detect_types=sqlite3.PARSE_DECLTYPES
         )
         g.db.execute('PRAGMA foreign_keys = ON')
@@ -60,23 +58,25 @@ def create_or_update_user(email: str, amazon_id: str) -> int:
     return user_id
 
 
-def update_user_with_pubnub(user_id: int, pubnub_publish_key: str, pubnub_subscribe_key: str) -> int:
+# TODO rename pubnub on mqtt_user_scope
+def update_user_with_mqtt_user_scope(user_id: int, pubnub_publish_key: str) -> int:
     db = get_db()
     user = find_user_by_id(user_id)
     if user is None:
         raise ValueError('User not found by id {}'.format(user_id))
     else:
-        db.execute('UPDATE user SET pubnub_publish_key = ?, pubnub_subscribe_key = ? WHERE id = ?',
-                   (pubnub_publish_key, pubnub_subscribe_key, user_id))
+        db.execute('UPDATE user SET pubnub_publish_key = ? WHERE id = ?',
+                   (pubnub_publish_key, user_id))
 
     db.commit()
     return user['id']
 
 
-def get_user_pubnub_keys(user_id: int) -> Tuple[str, str]:
+# TODO rename pubnub on mqtt_user_scope
+def get_user_mqtt_user_scope(user_id: int) -> str:
     db = get_db()
-    res = db.execute('SELECT pubnub_publish_key, pubnub_subscribe_key FROM user WHERE id = ?', (user_id,)).fetchone()
-    return (res['pubnub_publish_key'], res['pubnub_subscribe_key'])
+    res = db.execute('SELECT pubnub_publish_key FROM user WHERE id = ?', (user_id,)).fetchone()
+    return res['pubnub_publish_key']
 
 
 def find_user_by_id(id: int) -> sqlite3.Row:

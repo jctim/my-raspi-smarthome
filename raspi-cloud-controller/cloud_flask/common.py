@@ -6,6 +6,8 @@ from .db import find_thing_by_id, find_user_by_id
 
 AMAZON_TOKEN_REQUEST = 'https://api.amazon.com/auth/o2/token'
 AMAZON_PROFILE_REQUEST = 'https://api.amazon.com/user/profile?access_token={}'
+ALEXA_CONTROL_TOPIC = 'alexa/device/{}/control'
+ALEXA_REPLY_TOPIC = 'alexa/device/{}/reply'
 
 
 def load_logged_in_user():
