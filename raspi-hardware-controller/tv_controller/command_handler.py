@@ -132,7 +132,7 @@ def _get_api_volume() -> Union[Tuple[bool, int, int], None]:
 
 
 def _reply_with_values(values: Dict[str, Union[str, int]], **kwargs) -> Optional[mqtt.MQTTMessageInfo]:  # client: mqtt.Client, uuid: str
-    client: mqtt.Client = kwargs.get('client')
+    client = kwargs.get('client') # type: mqtt.Client
     if client is not None:
         uuid = kwargs['uuid']
         qos = int(kwargs.get('qos') or 1)
@@ -142,7 +142,7 @@ def _reply_with_values(values: Dict[str, Union[str, int]], **kwargs) -> Optional
 
 
 def _reply_with_error(error_desc: str, **kwargs) -> Optional[mqtt.MQTTMessageInfo]:  # client: mqtt.Client, uuid: str
-    client: mqtt.Client = kwargs.get('client')
+    client = kwargs.get('client') # type: mqtt.Client
     if client is not None:
         uuid = kwargs['uuid']
         qos = int(kwargs.get('qos') or 1)
