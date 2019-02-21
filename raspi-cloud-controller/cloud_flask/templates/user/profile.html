@@ -13,13 +13,10 @@
     <label for="amazon_id">Amazon ID</label>
     <input name="amazon_id" id="amazon_id" value="{{ g.user['amazon_id'] }}" disabled="disabled">
 
-    <label for="pubnub_publish_key">PubNub Publish Key</label>
-    <input name="pubnub_publish_key" id="pubnub_publish_key" value="{{ g.user['pubnub_publish_key'] }}">
+    <label for="user_scope_uuid">User Scope UUID</label>
+    <input name="user_scope_uuid" id="user_scope_uuid" value="{{ g.user['user_scope_uuid'] }}" disabled="disabled">
 
-    <label for="pubnub_subscribe_key">PubNub Subscribe Key</label>
-    <input name="pubnub_subscribe_key" id="pubnub_subscribe_key" value="{{ g.user['pubnub_subscribe_key'] }}">
-
-    <input type="submit" value="Update">
+    <input type="submit" value="Generate new User Scope UUID">
   </form>
 {% endif %}
 {% endblock %}

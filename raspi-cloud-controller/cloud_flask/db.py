@@ -58,25 +58,23 @@ def create_or_update_user(email: str, amazon_id: str) -> int:
     return user_id
 
 
-# TODO rename pubnub on mqtt_user_scope
-def update_user_with_mqtt_user_scope(user_id: int, pubnub_publish_key: str) -> int:
+def update_user_scope_uuid(user_id: int, user_scope_uuid: str) -> int:
     db = get_db()
     user = find_user_by_id(user_id)
     if user is None:
         raise ValueError('User not found by id {}'.format(user_id))
     else:
-        db.execute('UPDATE user SET pubnub_publish_key = ? WHERE id = ?',
-                   (pubnub_publish_key, user_id))
+        db.execute('UPDATE user SET user_scope_uuid = ? WHERE id = ?',
+                   (user_scope_uuid, user_id))
 
     db.commit()
     return user['id']
 
 
-# TODO rename pubnub on mqtt_user_scope
-def get_user_mqtt_user_scope(user_id: int) -> str:
+def get_user_scope_uuid(user_id: int) -> str:
     db = get_db()
-    res = db.execute('SELECT pubnub_publish_key FROM user WHERE id = ?', (user_id,)).fetchone()
-    return res['pubnub_publish_key']
+    res = db.execute('SELECT user_scope_uuid FROM user WHERE id = ?', (user_id,)).fetchone()
+    return res['user_scope_uuid']
 
 
 def find_user_by_id(id: int) -> sqlite3.Row:

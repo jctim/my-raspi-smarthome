@@ -7,7 +7,7 @@ from flask import logging as flask_logging
 
 from . import db
 from .common import AMAZON_PROFILE_REQUEST, AMAZON_TOKEN_REQUEST
-from .common import load_logged_in_user, login_required
+from .common import load_logged_in_user, login_required, generate_uuid as _uuid
 
 _LOGGER = logging.getLogger(__name__)
 _LOGGER.addHandler(flask_logging.default_handler)
@@ -83,13 +83,9 @@ def handle_login():
 @bp.route('/profile', methods=['GET', 'POST'])
 @login_required
 def profile():
-    if request.method == 'POST':
+    if request.method == 'POST':  # Generate only 'user scope' uuid
         user_id = g.user['id']
-        pubnub_publish_key = request.form['pubnub_publish_key']
-        pubnub_subscribe_key = request.form['pubnub_subscribe_key']
-
-        # TODO rename pubnub on mqtt_user_scope
-        db.update_user_with_mqtt_user_scope(user_id, pubnub_publish_key)
-        g.user = db.find_user_by_id(user_id)
+        db.update_user_scope_uuid(user_id, _uuid())
+        g.user = db.find_user_by_id(user_id)  # refresh user with new 'user scope' for request
 
     return render_template('user/profile.html')

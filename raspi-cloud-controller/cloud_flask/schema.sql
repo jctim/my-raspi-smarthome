@@ -23,8 +23,7 @@ CREATE TABLE user (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   email TEXT UNIQUE NOT NULL,
   amazon_id TEXT NOT NULL,
-  pubnub_publish_key TEXT DEFAULT NULL,
-  pubnub_subscribe_key TEXT DEFAULT NULL
+  user_scope_uuid TEXT NOT NULL
 );
 
 CREATE TABLE thing (

@@ -1,4 +1,5 @@
 import functools
+import uuid
 
 from flask import abort, g, redirect, session, url_for
 
@@ -6,13 +7,14 @@ from .db import find_thing_by_id, find_user_by_id
 
 AMAZON_TOKEN_REQUEST = 'https://api.amazon.com/auth/o2/token'
 AMAZON_PROFILE_REQUEST = 'https://api.amazon.com/user/profile?access_token={}'
-ALEXA_CONTROL_TOPIC = 'alexa/device/{}/control'
-ALEXA_REPLY_TOPIC = 'alexa/device/{}/reply'
+ALEXA_CONTROL_TOPIC = 'alexa/{}/device/{}/control'
+ALEXA_REPLY_TOPIC = 'alexa/{}/device/{}/reply'
+DEV_USER_SCOPE = '_dev_scope_'
 
 
 def load_logged_in_user():
     user_id = session.get('user_id')
-    # user_id = 1 # TODO: for testing
+    # user_id = 1  # TODO: for testing
 
     if user_id is None:
         g.user = None
@@ -45,3 +47,7 @@ def ensure_thing_belongs_to_user(view):
         return view(**kwargs)
 
     return wrapped_view
+
+
+def generate_uuid() -> str:
+    return str(uuid.uuid4())

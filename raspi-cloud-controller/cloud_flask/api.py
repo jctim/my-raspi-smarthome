@@ -2,7 +2,6 @@ import functools
 import json
 import logging
 import time
-import uuid
 from queue import Queue, Empty
 from typing import Tuple, Dict, Union, Optional, Any
 
@@ -13,7 +12,8 @@ from flask import (g, jsonify, request)
 from flask import logging as flask_logging
 
 from . import db, mqtt_client
-from .common import AMAZON_PROFILE_REQUEST, ALEXA_CONTROL_TOPIC, ALEXA_REPLY_TOPIC
+from .common import AMAZON_PROFILE_REQUEST, ALEXA_CONTROL_TOPIC, ALEXA_REPLY_TOPIC, DEV_USER_SCOPE
+from .common import generate_uuid as _uuid
 
 _LOGGER = logging.getLogger(__name__)
 _LOGGER.addHandler(flask_logging.default_handler)
@@ -88,13 +88,13 @@ def discover():
 @api_ensure_amazon_user_id_exists
 @api_ensure_thing_belongs_to_user
 def power(command):
-    (client, _) = _get_mqtt_client()
+    (client, user_scope) = _get_mqtt_client()
 
     if command == 'TurnOn':
-        (_, _) = _send_control_message_async(g.endpoint_id, {'power': 'on'}, client=client)
+        (_, _) = _send_control_message_async(g.endpoint_id, {'power': 'on'}, client=client, user_scope=user_scope)
         result = 'ON'  # TODO sync?
     elif command == 'TurnOff':
-        (_, _) = _send_control_message_async(g.endpoint_id, {'power': 'off'}, client=client)
+        (_, _) = _send_control_message_async(g.endpoint_id, {'power': 'off'}, client=client, user_scope=user_scope)
         result = 'OFF'  # TODO sync?
     else:
         return jsonify({'error': 'unsupported_command'}), 400
@@ -106,9 +106,9 @@ def power(command):
 @api_ensure_amazon_user_id_exists
 @api_ensure_thing_belongs_to_user
 def input(source):
-    (client, _) = _get_mqtt_client()
+    (client, user_scope) = _get_mqtt_client()
 
-    (_, _) = _send_control_message_async(g.endpoint_id, {'source': source}, client=client)
+    (_, _) = _send_control_message_async(g.endpoint_id, {'source': source}, client=client, user_scope=user_scope)
     result = source  # TODO sync?
 
     return jsonify({'result': {'input': result}, 'time': _get_utc_timestamp()})
@@ -118,14 +118,14 @@ def input(source):
 @api_ensure_amazon_user_id_exists
 @api_ensure_thing_belongs_to_user
 def speaker(command, value):
-    (client, scope) = _get_mqtt_client()
+    (client, user_scope) = _get_mqtt_client()
 
     if command == 'SetVolume':
-        result = _send_control_message_sync(g.endpoint_id, {'volume': value, 'type': 'abs'}, client=client)
+        result = _send_control_message_sync(g.endpoint_id, {'volume': value, 'type': 'abs'}, client=client, user_scope=user_scope)
     elif command == 'AdjustVolume':
-        result = _send_control_message_sync(g.endpoint_id, {'volume': value, 'type': 'rel'}, client=client)
+        result = _send_control_message_sync(g.endpoint_id, {'volume': value, 'type': 'rel'}, client=client, user_scope=user_scope)
     elif command == 'SetMute':
-        result = _send_control_message_sync(g.endpoint_id, {'volume': value, 'type': 'mute'}, client=client)
+        result = _send_control_message_sync(g.endpoint_id, {'volume': value, 'type': 'mute'}, client=client, user_scope=user_scope)
     else:
         return jsonify({'error': 'unsupported_command'}), 400
 
@@ -138,10 +138,11 @@ def speaker(command, value):
 def _send_control_message_async(endpoint_id: str, values: Dict[str, Union[str, int]], **kwargs) -> Optional[Tuple[mqtt.MQTTMessageInfo, str]]:
     m_uuid = str(kwargs.get('uuid') or _uuid())
     qos = int(kwargs.get('qos') or 2)
+    user_scope = str(kwargs.get('user_scope') or DEV_USER_SCOPE)
     client: mqtt.Client = kwargs.get('client')
 
     if client is not None:
-        control_topic = ALEXA_CONTROL_TOPIC.format(endpoint_id)
+        control_topic = ALEXA_CONTROL_TOPIC.format(user_scope, endpoint_id)
 
         control_message = dict({"uuid": m_uuid}, **values)
         _LOGGER.debug('sending message %s', control_message)
@@ -155,6 +156,7 @@ def _send_control_message_async(endpoint_id: str, values: Dict[str, Union[str, i
 def _send_control_message_sync(endpoint_id: str, values: Dict[str, Union[str, int]], **kwargs) -> Optional[Dict[str, Union[str, int]]]:
     m_uuid = str(kwargs.get('uuid') or _uuid())
     qos = int(kwargs.get('qos') or 2)
+    user_scope = str(kwargs.get('user_scope') or DEV_USER_SCOPE)
     client: mqtt.Client = kwargs.get('client')
     q: Queue[Dict[str, Union[str, int]]] = Queue()
 
@@ -167,8 +169,8 @@ def _send_control_message_sync(endpoint_id: str, values: Dict[str, Union[str, in
         q.put(reply)
 
     if client is not None:
-        control_topic = ALEXA_CONTROL_TOPIC.format(endpoint_id)
-        reply_topic = ALEXA_REPLY_TOPIC.format(endpoint_id)
+        control_topic = ALEXA_CONTROL_TOPIC.format(user_scope, endpoint_id)
+        reply_topic = ALEXA_REPLY_TOPIC.format(user_scope, endpoint_id)
 
         client.subscribe(reply_topic)
         client.message_callback_add(reply_topic, _on_message_inner)
@@ -206,16 +208,13 @@ def _build_endpoint(thing_id):
     }
 
 
+# TODO keep and get (client, scope) in session or request implicitly
 def _get_mqtt_client() -> Tuple[mqtt.Client, str]:
     client = mqtt_client.get()
-    mqtt_user_scope = db.get_user_mqtt_user_scope(g.user_id)
+    user_scope = db.get_user_scope_uuid(g.user_id)
 
-    return client, mqtt_user_scope
+    return client, user_scope
 
 
 def _get_utc_timestamp(seconds=None):
     return time.strftime("%Y-%m-%dT%H:%M:%S.00Z", time.gmtime(seconds))
-
-
-def _uuid() -> str:
-    return str(uuid.uuid4())
