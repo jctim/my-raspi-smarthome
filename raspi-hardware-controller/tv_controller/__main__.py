@@ -6,12 +6,11 @@ from urllib.parse import urlparse, ParseResult
 import paho.mqtt.client as mqtt  # type:ignore
 
 from . import callback
-from . import logger, DEVICE_ID
+from . import logger, DEVICE_ID, MQTT_BROKER_URL
 
 
 def main():
-    url = os.environ.get('MQTT_BROKER_URL', 'mqtt://localhost:1883')  # type: str
-    connection = urlparse(url)  # type: ParseResult
+    connection = urlparse(MQTT_BROKER_URL)  # type: ParseResult
 
     client = mqtt.Client(client_id='tv-controller_{}-{}'.format(DEVICE_ID, uuid.uuid4()), clean_session=True, userdata=None, transport='tcp')
     client.username_pw_set(connection.username, connection.password)

@@ -1,8 +1,10 @@
 import logging
 import os
 
+# MQTT Broker URL
+MQTT_BROKER_URL = os.environ.get('MQTT_BROKER_URL', 'mqtt://localhost:1883')
 # User scope - a unique string (uuid is good choice) that represents current user
-USER_SCOPE = os.environ.get('USER_SCOPE', '_dev_scope_')
+MQTT_USER_SCOPE = os.environ.get('MQTT_USER_SCOPE', '_dev_scope_')
 # Device id - is used as endpoint_id in cloud_controller
 DEVICE_ID = os.environ.get('DEVICE_TV_ID', 'tv-01')
 # Device IP - the IP address to be used to make REST calls (see below)
@@ -12,8 +14,8 @@ DEVICE_IP = os.environ.get('DEVICE_TV_IP', '192.168.1.97')
 TV_API_URL = 'http://{ip}:1925/1/{cmd}'.format(ip=DEVICE_IP, cmd='{cmd}')
 
 # MQTT topics
-ALEXA_CONTROL_TOPIC = 'alexa/{}/device/{}/control'.format(USER_SCOPE, DEVICE_ID)
-ALEXA_REPLY_TOPIC = 'alexa/{}/device/{}/reply'.format(USER_SCOPE, DEVICE_ID)
+ALEXA_CONTROL_TOPIC = 'alexa/{}/device/{}/control'.format(MQTT_USER_SCOPE, DEVICE_ID)
+ALEXA_REPLY_TOPIC = 'alexa/{}/device/{}/reply'.format(MQTT_USER_SCOPE, DEVICE_ID)
 
 # Refer to https://www.raspberrypi.org/forums/viewtopic.php?f=29&t=53481
 CEC_CMD = 'echo "{}" | cec-client RPI -s -d 1'
