@@ -23,7 +23,7 @@ CREATE TABLE user (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   email TEXT UNIQUE NOT NULL,
   amazon_id TEXT NOT NULL,
-  user_scope_uuid TEXT NOT NULL
+  user_scope_uuid TEXT NOT NULL DEFAULT '_dev_scope_'
 );
 
 CREATE TABLE thing (

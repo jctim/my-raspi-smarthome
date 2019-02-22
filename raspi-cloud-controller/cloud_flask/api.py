@@ -46,6 +46,7 @@ def api_ensure_amazon_user_id_exists(view):
                     return jsonify({'error': 'user_not_found'}), 403
                 else:
                     g.user_id = user['id']
+                    g.user_scope_uuid = user['user_scope_uuid']
                     g.amazon_user_id = amazon_user_id
                     return view(**kwargs)
 
@@ -211,7 +212,7 @@ def _build_endpoint(thing_id):
 # TODO keep and get (client, scope) in session or request implicitly???
 def _get_client_scope() -> Tuple[mqtt.Client, str]:
     client = mqtt_client.get()
-    user_scope = g.user['user_scope_uuid']
+    user_scope = g.user_scope_uuid
 
     return client, user_scope
 

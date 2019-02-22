@@ -92,5 +92,6 @@ def profile():
         user_id = g.user['id']
         db.update_user_scope_uuid(user_id, _uuid())
         g.user = db.find_user_by_id(user_id)  # refresh user with new 'user scope' for request
+        return redirect(url_for('user.profile')) # avoid browser asking for re-submit form on refresh action
 
     return render_template('user/profile.html')
