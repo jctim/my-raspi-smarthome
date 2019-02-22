@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block header %}
+<h1>{% block title %}Deleting the thing '{{g.thing.endpoint_id}}' {% endblock %}</h1>
+{% endblock %}
+
+{% block content %}
+{% if g.user and g.thing %}
+<a href="{{ url_for('thing.thing_list') }}" id="list">List</a>
+<a href="{{ url_for('thing.thing_view', thing_id=g.thing['id']) }}" id="view">View</a>
+
+<form method="post" id="form-delete">
+    <div>
+        <span>Are you sure to delete thing {{ g.thing.endpoint_id }} ({{ g.thing.friendly_name }}) ?</span>
+    </div>
+    <input type="submit" value="Sure, I'm ok with that">
+</form>
+
+{% endif %}
+{% endblock %}

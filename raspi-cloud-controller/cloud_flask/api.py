@@ -88,7 +88,7 @@ def discover():
 @api_ensure_amazon_user_id_exists
 @api_ensure_thing_belongs_to_user
 def power(command):
-    (client, user_scope) = _get_mqtt_client()
+    (client, user_scope) = _get_client_scope()
 
     if command == 'TurnOn':
         (_, _) = _send_control_message_async(g.endpoint_id, {'power': 'on'}, client=client, user_scope=user_scope)
@@ -106,7 +106,7 @@ def power(command):
 @api_ensure_amazon_user_id_exists
 @api_ensure_thing_belongs_to_user
 def input(source):
-    (client, user_scope) = _get_mqtt_client()
+    (client, user_scope) = _get_client_scope()
 
     (_, _) = _send_control_message_async(g.endpoint_id, {'source': source}, client=client, user_scope=user_scope)
     result = source  # TODO sync?
@@ -118,7 +118,7 @@ def input(source):
 @api_ensure_amazon_user_id_exists
 @api_ensure_thing_belongs_to_user
 def speaker(command, value):
-    (client, user_scope) = _get_mqtt_client()
+    (client, user_scope) = _get_client_scope()
 
     if command == 'SetVolume':
         result = _send_control_message_sync(g.endpoint_id, {'volume': value, 'type': 'abs'}, client=client, user_scope=user_scope)
@@ -208,10 +208,10 @@ def _build_endpoint(thing_id):
     }
 
 
-# TODO keep and get (client, scope) in session or request implicitly
-def _get_mqtt_client() -> Tuple[mqtt.Client, str]:
+# TODO keep and get (client, scope) in session or request implicitly???
+def _get_client_scope() -> Tuple[mqtt.Client, str]:
     client = mqtt_client.get()
-    user_scope = db.get_user_scope_uuid(g.user_id)
+    user_scope = g.user['user_scope_uuid']
 
     return client, user_scope
 

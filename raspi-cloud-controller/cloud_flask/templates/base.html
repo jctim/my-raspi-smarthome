@@ -5,12 +5,12 @@
   <h1>Cloud Controller</h1>
   <ul>
     {% if g.user %}
-    <li><span>{{ g.user['username'] }}</span>
-    <li><a href="{{ url_for('thing.list') }}" id="Things">Things</a>
-    <li><a href="{{ url_for('user.profile') }}" id="Profile">Profile</a>
-    <li><a href="{{ url_for('user.logout') }}" id="Logout">Log Out</a>
+    <li><span>{{ g.user['username'] }}</span></li>
+    <li><a href="{{ url_for('thing.thing_list') }}" id="things">Things</a></li>
+    <li><a href="{{ url_for('user.profile') }}" id="profile">Profile</a></li>
+    <li><a href="{{ url_for('user.logout') }}" id="logout">Log Out</a></li>
       {% else %}
-    <li><a href="{{ url_for('user.login') }}">Log In</a>
+    <li><a href="{{ url_for('user.login') }}">Log In</a></li>
       {% endif %}
   </ul>
 </nav>
@@ -31,7 +31,7 @@
     amazon.Login.setClientId('{{ config["AMAZON_CLIENT_ID"] }}');
   };
 
-  document.getElementById('Logout').onclick = function () {
+  document.getElementById('logout').onclick = function () {
     amazon.Login.logout();
   };
 </script>

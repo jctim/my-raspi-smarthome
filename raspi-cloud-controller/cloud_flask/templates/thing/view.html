@@ -6,15 +6,17 @@
 
 {% block content %}
 {% if g.user and g.thing %}
-<a href="{{ url_for('thing.list') }}" id="List">List</a>
-<a href="{{ url_for('thing.edit', thing_id=g.thing['id']) }}" id="Edit">Edit</a>
+<a href="{{ url_for('thing.thing_list') }}" id="list">List</a>
+<a href="{{ url_for('thing.thing_edit', thing_id=g.thing['id']) }}" id="edit">Edit</a>
+<a href="{{ url_for('thing.thing_delete', thing_id=g.thing['id']) }}" id="delete">Delete</a>
+
 <ul>
     <li>Name: {{ g.thing['endpoint_id'] }}</li>
-    <li>Friendly Name:{{ g.thing['friendly_name'] }}</li>
+    <li>Friendly Name: {{ g.thing['friendly_name'] }}</li>
     <li>Description: {{ g.thing['description'] }}</li>
     <li>Manufacturer: {{ g.thing['manufacturer_name'] }}</li>
     <li>Category: {{ g.thing['alexa_category_name'] }}</li>
-    <li>Capabilities and Properties:
+    <li>Capabilities and their Properties:
         <ul>
             {% for thing_capability in g.thing_capabilities %}
             <li>{{ thing_capability['name'] }}: [{{ thing_capability['properties'] }}]</li>

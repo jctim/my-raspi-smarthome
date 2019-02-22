@@ -2,7 +2,7 @@ import logging
 
 import requests
 from flask import Blueprint
-from flask import (flash, g, redirect, render_template, request, session, url_for, current_app)
+from flask import flash, g, redirect, render_template, request, session, url_for, current_app
 from flask import logging as flask_logging
 
 from . import db
@@ -19,6 +19,11 @@ bp = Blueprint('user', __name__, url_prefix='/user')
 @bp.before_app_request
 def before_app_request():
     load_logged_in_user()
+
+
+@bp.route('/')
+def thing_index():
+    return redirect(url_for('user.profile'))
 
 
 @bp.route('/login')

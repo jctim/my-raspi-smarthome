@@ -17,5 +17,5 @@ COPY cloud_flask cloud_flask
 RUN mkdir -p instance
 
 ENV FLASK_APP=cloud_flask
-ENV FLASK_ENV=development
+ENV FLASK_ENV=production
 CMD ["flask", "run", "--host=0.0.0.0"]

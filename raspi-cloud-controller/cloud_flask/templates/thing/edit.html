@@ -6,11 +6,41 @@
 
 {% block content %}
 {% if g.user %}
-<a href="{{ url_for('thing.list') }}" id="List">List</a>
-<a href="{{ url_for('thing.view', thing_id=g.thing['id']) }}" id="View">View</a>
-<form method="post">
-    <label for="name">Name</label>
-    <input name="name" id="name" value="{{ g.thing['endpoint_id'] }}">
+
+<script type='text/javascript'>
+var capabilityId = {{ g.thing_capabilities | length }};
+
+function add_capability() {
+    capabilityId++;
+    var containerEl = document.getElementById('alexa_capabilities')
+	var liEl = document.createElement('li');
+	liEl.setAttribute('id', 'alexa_capability_li_' + capabilityId)
+    liEl.innerHTML = `
+        <select name="alexa_capability" id="alexa_capability_` + capabilityId + `">
+            {% for alexa_capability in alexa_capabilities %}
+            <option value="{{ alexa_capability['id'] }}">{{ alexa_capability['name'] }}</option>
+            {% endfor %}
+        </select>
+        <input name="alexa_capability_properties" id="alexa_capability_properties_1" value="">
+        <span>
+            <button type="button" onclick="remove_capability(` + capabilityId + `);">-</button>
+        </span>
+    `;
+
+    containerEl.appendChild(liEl)
+}
+
+function remove_capability(id) {
+   document.getElementById('alexa_capability_li_' + id).remove();
+}
+</script>
+
+<a href="{{ url_for('thing.thing_list') }}" id="list">List</a>
+<a href="{{ url_for('thing.thing_view', thing_id=g.thing['id']) }}" id="view">View</a>
+
+<form method="post" id="form-edit">
+    <label for="endpoint_id">Name ("EndpointId" - unique device id)</label>
+    <input name="endpoint_id" id="endpoint_id" value="{{ g.thing['endpoint_id'] }}">
 
     <label for="friendly_name">Friendly Name</label>
     <input name="friendly_name" id="friendly_name" value="{{ g.thing['friendly_name'] }}">
@@ -21,32 +51,54 @@
     <label for="manufacturer_name">Manufacturer Name</label>
     <input name="manufacturer_name" id="manufacturer_name" value="{{ g.thing['manufacturer_name'] }}">
 
-    <label for="alexa_category_name">Alexa Category</label>
-    <select name="alexa_category_name" id="alexa_category_name">
+    <label for="alexa_category">Alexa Category</label>
+    <select name="alexa_category" id="alexa_category">
         {% for alexa_category in alexa_categories %}
         {% if g.thing['alexa_category_id'] == alexa_category['id'] %}
-        <option id="{{ alexa_category['id'] }}" selected="selected">{{ alexa_category['name'] }}</option>
+        <option value="{{ alexa_category['id'] }}" selected="selected">{{ alexa_category['name'] }}</option>
         {% else %}
-        <option id="{{ alexa_category['id'] }}">{{ alexa_category['name'] }}</option>
+        <option value="{{ alexa_category['id'] }}">{{ alexa_category['name'] }}</option>
         {% endif %}
         {% endfor %}
     </select>
 
-    <label for="alexa_capabilities">Alexa Capabilities</label>
+    <label for="alexa_capability_1">Alexa Capabilities and their Properties</label>
     <ul id="alexa_capabilities">
-        {% for thing_capability in g.thing_capabilities %}
-        <li>
-            <select name="alexa_capability_{{ thing_capability['id'] }}" id="alexa_capability_{{ thing_capability['id'] }}">
+        {% if g.thing_capabilities | length == 0%}
+        <li id="alexa_capability_li_1">
+            <select name="alexa_capability" id="alexa_capability_1">
                 {% for alexa_capability in alexa_capabilities %}
-                {% if thing_capability['id'] == alexa_capabilities['id'] %}
-                <option id="{{ alexa_capability['id'] }}" selected="selected">{{ alexa_capability['name'] }}</option>
+                <option value="{{ alexa_capability['id'] }}">{{ alexa_capability['name'] }}</option>
+                {% endfor %}
+            </select>
+            <input name="alexa_capability_properties" id="alexa_capability_properties_1" value=""/>
+            <span>
+                <button type="button"  onclick="add_capability();">+</button>
+            </span>
+        </li>
+        {% endif %}
+        {% for thing_capability in g.thing_capabilities %}
+        <li id="alexa_capability_li_{{ loop.index }}">
+            <select name="alexa_capability" id="alexa_capability_{{ loop.index }}">
+                {% for alexa_capability in alexa_capabilities %}
+                {% if thing_capability['id'] == alexa_capability['id'] %}
+                <option value="{{ alexa_capability['id'] }}" selected="selected">{{ alexa_capability['name'] }}</option>
                 {% else %}
-                <option id="{{ alexa_capability['id'] }}">{{ alexa_capability['name'] }}</option>
+                <option value="{{ alexa_capability['id'] }}">{{ alexa_capability['name'] }}</option>
                 {% endif %}
                 {% endfor %}
-                <input name="alexa_capbility_properties{{ thing_capability['id'] }}" id="alexa_capability_properties_{{ thing_capability['id'] }}"
-                    value="{{ thing_capability['properties'] }}">
             </select>
+            <input name="alexa_capability_properties" id="alexa_capability_properties_{{ loop.index }}"
+                value="{{ thing_capability['properties'] }}"/>
+            {% if loop.index == 1 %}
+            <span >
+                <button type="button"  onclick="add_capability();">+</button>
+            </span>
+            {% else %}
+            <span >
+                <button type="button"  onclick="remove_capability({{ loop.index }});">-</button>
+            </span>
+            {% endif %}
         </li>
         {% endfor %}
     </ul>

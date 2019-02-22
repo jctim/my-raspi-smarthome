@@ -6,11 +6,12 @@
 
 {% block content %}
 {% if g.user %}
-<a href="{{ url_for('thing.add') }}" id="Add">Add</a>
+<a href="{{ url_for('thing.thing_add') }}" id="add">Add</a>
+
 <ul>
-{% for thing in things %}
+    {% for thing in things %}
     <li><a href="view/{{ thing.id }}">{{ thing.endpoint_id }}: {{ thing.friendly_name }}</a></li>
-{% endfor %}
+    {% endfor %}
 </ul>
 {% endif %}
 {% endblock %}
