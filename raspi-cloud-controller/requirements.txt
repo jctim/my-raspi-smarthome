@@ -1,3 +1,4 @@
 flask==1.0.2
+flask-bootstrap==3.3.*
 requests==2.21.0
 paho-mqtt==1.4.0

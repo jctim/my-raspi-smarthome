@@ -1,18 +1,19 @@
 {% extends 'base.html' %}
 
-{% block header %}
-<h1>{% block title %}Log In{% endblock %}</h1>
-{% endblock %}
+{% block title %}{% block header %}Log In{% endblock %} - {{super()}}{% endblock %}
 
-{% block content %}
-<!-- Amazon-related scripts -->
+{% block container %}
 <a href="#" id="loginWithAmazon">
   <img border="0" alt="Login with Amazon" src="https://images-na.ssl-images-amazon.com/images/G/01/lwa/btnLWA_gold_156x32.png"
     width="156" height="32" />
 </a>
 
 <div id="amazon-root"></div>
+{% endblock %}
 
+{% block scripts %}
+{{super()}}
+<!-- Amazon-related scripts -->
 <script type="text/javascript">
   window.onAmazonLoginReady = function () {
     amazon.Login.setClientId('{{ config["AMAZON_CLIENT_ID"] }}');
@@ -36,6 +37,4 @@
     return false;
   };
 </script>
-
-
 {% endblock %}

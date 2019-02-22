@@ -1,110 +1,170 @@
 {% extends 'base.html' %}
+{% if g.user and g.thing %}
 
-{% block header %}
-<h1>{% block title %}Editing the thing '{{g.thing.endpoint_id}}' {% endblock %}</h1>
+{% block title %}{% block header %}Your thing '{{g.thing.endpoint_id}}'{% endblock %} - {{super()}}{% endblock %}
+
+{% block container %}
+<form method="post" class="form-horizontal" id="form-edit">
+    <div class="form-group">
+        <label for="endpoint_id" class="col-sm-2 control-label">Name (EndpointId)</label>
+        <div class="col-sm-10">
+            <input name="endpoint_id" id="endpoint_id" class="form-control" placeholder="tv-01"
+                   value="{{ g.thing['endpoint_id'] }}"/>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="friendly_name" class="col-sm-2 control-label">Friendly Name</label>
+        <div class="col-sm-10">
+            <input name="friendly_name" id="friendly_name" class="form-control" placeholder="Philips TV"
+                   value="{{ g.thing['friendly_name'] }}"/>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="description" class="col-sm-2 control-label">Description</label>
+        <div class="col-sm-10">
+            <input name="description" id="description"  class="form-control"  placeholder="My Philips TV 6008 controlled by Raspberry Pi via HDMI-CEC"
+                   value="{{ g.thing['description'] }}"/>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="manufacturer_name" class="col-sm-2 control-label">Manufacturer Name</label>
+        <div class="col-sm-10">
+            <input name="manufacturer_name" id="manufacturer_name"  class="form-control" placeholder="Philips"
+                   value="{{ g.thing['manufacturer_name'] }}"/>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="alexa_category" class="col-sm-2 control-label">Alexa Category</label>
+        <div class="col-sm-10">
+            <select name="alexa_category" id="alexa_category" class="form-control">
+                {% for alexa_category in alexa_categories %}
+                <option {{ 'selected="selected"' if g.thing['alexa_category_id'] == alexa_category['id'] }}
+                        value="{{ alexa_category['id'] }}">{{ alexa_category['name'] }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <div id="alexa_capabilities">
+        {% if g.thing_capabilities | length == 0 %}
+        <div class="form-group" id="alexa_capability_li_1">
+            <label for="alexa_capability_1" class="col-sm-2 control-label">Alexa Capabilities</label>
+            <div class="col-sm-10 row">
+                <div class="col-sm-4">
+                    <select name="alexa_capability" id="alexa_capability_1" class="form-control">
+                        {% for alexa_capability in alexa_capabilities %}
+                        <option value="{{ alexa_capability['id'] }}">{{ alexa_capability['name'] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-sm-8">
+                    <div class="input-group">
+                        <input name="alexa_capability_properties" id="alexa_capability_properties_1"
+                               type="text" class="form-control" placeholder="HDMI 1, HDMI 2, HDMI 3"/>
+                        <span class="input-group-btn">
+                            <button class="btn btn-success" type="button" onclick="add_capability()">+</button>
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        {% for thing_capability in g.thing_capabilities %}
+        <div class="form-group" id="alexa_capability_li_{{ loop.index }}">
+            <label for="alexa_capability_{{ loop.index }}" class="col-sm-2 control-label">{{ 'Alexa Capabilities' if loop.index == 1 }}</label>
+            <div class="col-sm-10 row">
+                <div class="col-sm-4">
+                    <select name="alexa_capability" id="alexa_capability_{{ loop.index }}" class="form-control">
+                        {% for alexa_capability in alexa_capabilities %}
+                        <option {{ 'selected="selected"' if thing_capability['id'] == alexa_capability['id'] }}
+                                value="{{ alexa_capability['id'] }}">{{ alexa_capability['name'] }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-sm-8">
+                    <div class="input-group">
+                        <input name="alexa_capability_properties" id="alexa_capability_properties_{{ loop.index }}"
+                               type="text" class="form-control" placeholder="HDMI 1, HDMI 2, HDMI 3"
+                               value="{{ thing_capability['properties'] }}"/>
+                        <span class="input-group-btn">
+                        {% if loop.index == 1 %}
+                            <button class="btn btn-success" type="button" onclick="add_capability()">+</button>
+                        {% else %}
+                            <button class="btn btn-danger" type="button" onclick="remove_capability({{ loop.index }})">-</button>
+                        {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <button type="submit" class="btn btn-primary">Update</button>
+</form>
 {% endblock %}
 
-{% block content %}
-{% if g.user %}
+{% block navpills %}
+<ul class="nav nav-pills">
+    <li role="presentation">
+        <a href="{{ url_for('thing.thing_list') }}" id="list">List</a>
+    </li>
+    <li role="presentation">
+        <a href="{{ url_for('thing.thing_view', thing_id=g.thing['id']) }}" id="view">View</a>
+    </li>
+    <li role="presentation" class="active">
+        <a href="{{ url_for('thing.thing_edit', thing_id=g.thing['id']) }}" id="edit">Edit</a>
+    </li>
+    <li role="presentation">
+        <a href="{{ url_for('thing.thing_delete', thing_id=g.thing['id']) }}" id="delete">Delete</a>
+    </li>
+</ul>
+{% endblock %}
 
+{% block scripts %}
+{{super()}}
 <script type='text/javascript'>
 var capabilityId = {{ g.thing_capabilities | length }};
 
 function add_capability() {
     capabilityId++;
-    var containerEl = document.getElementById('alexa_capabilities')
-	var liEl = document.createElement('li');
-	liEl.setAttribute('id', 'alexa_capability_li_' + capabilityId)
-    liEl.innerHTML = `
-        <select name="alexa_capability" id="alexa_capability_` + capabilityId + `">
-            {% for alexa_capability in alexa_capabilities %}
-            <option value="{{ alexa_capability['id'] }}">{{ alexa_capability['name'] }}</option>
-            {% endfor %}
-        </select>
-        <input name="alexa_capability_properties" id="alexa_capability_properties_1" value="">
-        <span>
-            <button type="button" onclick="remove_capability(` + capabilityId + `);">-</button>
-        </span>
-    `;
+    var containerEl = document.getElementById('alexa_capabilities');
 
-    containerEl.appendChild(liEl)
+	var divEl = document.createElement('div');
+	divEl.setAttribute('class', 'form-group');
+	divEl.setAttribute('id', 'alexa_capability_li_' + capabilityId);
+    divEl.innerHTML = `
+        <label for="alexa_capability_` + capabilityId + `" class="col-sm-2 control-label"></label>
+        <div class="col-sm-10 row">
+            <div class="col-sm-4">
+                <select name="alexa_capability" id="alexa_capability_` + capabilityId + `" class="form-control">
+                    {% for alexa_capability in alexa_capabilities %}
+                    <option value="{{ alexa_capability['id'] }}" {{ 'selected="selected"' if loop.index == 33 }} >{{ alexa_capability['name'] }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-sm-8">
+                <div class="input-group">
+                    <input name="alexa_capability_properties" id="alexa_capability_properties_` + capabilityId + `"
+                           type="text" class="form-control" placeholder="Play, Pause, Stop">
+                    <span class="input-group-btn">
+                    <button class="btn btn-danger" type="button" onclick="remove_capability(` + capabilityId + `)">-</button>
+                </span>
+                </div>
+            </div>
+        </div>
+    `;
+    containerEl.appendChild(divEl);
 }
 
 function remove_capability(id) {
    document.getElementById('alexa_capability_li_' + id).remove();
 }
 </script>
-
-<a href="{{ url_for('thing.thing_list') }}" id="list">List</a>
-<a href="{{ url_for('thing.thing_view', thing_id=g.thing['id']) }}" id="view">View</a>
-
-<form method="post" id="form-edit">
-    <label for="endpoint_id">Name ("EndpointId" - unique device id)</label>
-    <input name="endpoint_id" id="endpoint_id" value="{{ g.thing['endpoint_id'] }}">
-
-    <label for="friendly_name">Friendly Name</label>
-    <input name="friendly_name" id="friendly_name" value="{{ g.thing['friendly_name'] }}">
-
-    <label for="description">Description</label>
-    <input name="description" id="description" value="{{ g.thing['description'] }}">
-
-    <label for="manufacturer_name">Manufacturer Name</label>
-    <input name="manufacturer_name" id="manufacturer_name" value="{{ g.thing['manufacturer_name'] }}">
-
-    <label for="alexa_category">Alexa Category</label>
-    <select name="alexa_category" id="alexa_category">
-        {% for alexa_category in alexa_categories %}
-        {% if g.thing['alexa_category_id'] == alexa_category['id'] %}
-        <option value="{{ alexa_category['id'] }}" selected="selected">{{ alexa_category['name'] }}</option>
-        {% else %}
-        <option value="{{ alexa_category['id'] }}">{{ alexa_category['name'] }}</option>
-        {% endif %}
-        {% endfor %}
-    </select>
-
-    <label for="alexa_capability_1">Alexa Capabilities and their Properties</label>
-    <ul id="alexa_capabilities">
-        {% if g.thing_capabilities | length == 0%}
-        <li id="alexa_capability_li_1">
-            <select name="alexa_capability" id="alexa_capability_1">
-                {% for alexa_capability in alexa_capabilities %}
-                <option value="{{ alexa_capability['id'] }}">{{ alexa_capability['name'] }}</option>
-                {% endfor %}
-            </select>
-            <input name="alexa_capability_properties" id="alexa_capability_properties_1" value=""/>
-            <span>
-                <button type="button"  onclick="add_capability();">+</button>
-            </span>
-        </li>
-        {% endif %}
-        {% for thing_capability in g.thing_capabilities %}
-        <li id="alexa_capability_li_{{ loop.index }}">
-            <select name="alexa_capability" id="alexa_capability_{{ loop.index }}">
-                {% for alexa_capability in alexa_capabilities %}
-                {% if thing_capability['id'] == alexa_capability['id'] %}
-                <option value="{{ alexa_capability['id'] }}" selected="selected">{{ alexa_capability['name'] }}</option>
-                {% else %}
-                <option value="{{ alexa_capability['id'] }}">{{ alexa_capability['name'] }}</option>
-                {% endif %}
-                {% endfor %}
-            </select>
-            <input name="alexa_capability_properties" id="alexa_capability_properties_{{ loop.index }}"
-                value="{{ thing_capability['properties'] }}"/>
-            {% if loop.index == 1 %}
-            <span >
-                <button type="button"  onclick="add_capability();">+</button>
-            </span>
-            {% else %}
-            <span >
-                <button type="button"  onclick="remove_capability({{ loop.index }});">-</button>
-            </span>
-            {% endif %}
-        </li>
-        {% endfor %}
-    </ul>
-
-
-    <input type="submit" value="Update">
-</form>
-{% endif %}
 {% endblock %}
+
+{% endif %}

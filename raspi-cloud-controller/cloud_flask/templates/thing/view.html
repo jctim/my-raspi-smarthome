@@ -1,15 +1,9 @@
 {% extends 'base.html' %}
-
-{% block header %}
-<h1>{% block title %}Your thing '{{g.thing['endpoint_id']}}' {% endblock %}</h1>
-{% endblock %}
-
-{% block content %}
 {% if g.user and g.thing %}
-<a href="{{ url_for('thing.thing_list') }}" id="list">List</a>
-<a href="{{ url_for('thing.thing_edit', thing_id=g.thing['id']) }}" id="edit">Edit</a>
-<a href="{{ url_for('thing.thing_delete', thing_id=g.thing['id']) }}" id="delete">Delete</a>
 
+{% block title %}{% block header %}Your thing '{{g.thing['endpoint_id']}}'{% endblock %} - {{super()}}{% endblock %}
+
+{% block container %}
 <ul>
     <li>Name: {{ g.thing['endpoint_id'] }}</li>
     <li>Friendly Name: {{ g.thing['friendly_name'] }}</li>
@@ -24,5 +18,23 @@
         </ul>
     </li>
 </ul>
-{% endif %}
 {% endblock %}
+
+{% block navpills %}
+<ul class="nav nav-pills">
+    <li role="presentation">
+        <a href="{{ url_for('thing.thing_list') }}" id="list">List</a>
+    </li>
+    <li role="presentation" class="active">
+        <a href="{{ url_for('thing.thing_view', thing_id=g.thing['id']) }}" id="view">View</a>
+    </li>
+    <li role="presentation">
+        <a href="{{ url_for('thing.thing_edit', thing_id=g.thing['id']) }}" id="edit">Edit</a>
+    </li>
+    <li role="presentation">
+        <a href="{{ url_for('thing.thing_delete', thing_id=g.thing['id']) }}" id="delete">Delete</a>
+    </li>
+</ul>
+{% endblock %}
+
+{% endif %}

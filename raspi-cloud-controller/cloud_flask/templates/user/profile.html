@@ -1,22 +1,37 @@
 {% extends 'base.html' %}
-
-{% block header %}
-<h1>{% block title %}Your profile{% endblock %}</h1>
-{% endblock %}
-
-{% block content %}
 {% if g.user %}
-<form method="post">
-    <label for="email">Email</label>
-    <input name="email" id="email" value="{{ g.user['email'] }}" disabled="disabled">
-    
-    <label for="amazon_id">Amazon ID</label>
-    <input name="amazon_id" id="amazon_id" value="{{ g.user['amazon_id'] }}" disabled="disabled">
 
-    <label for="user_scope_uuid">User Scope UUID</label>
-    <input name="user_scope_uuid" id="user_scope_uuid" value="{{ g.user['user_scope_uuid'] }}" disabled="disabled">
+{% block title %}{% block header %}Your profile{% endblock %} - {{super()}}{% endblock %}
 
-    <input type="submit" value="Generate new User Scope UUID">
-  </form>
-{% endif %}
+{% block container %}
+<form method="post" class="form-horizontal">
+    <div class="form-group">
+        <label for="email" class="col-sm-2 control-label">Email address</label>
+        <div class="col-sm-10">
+            <input id="email" name="email" value="{{ g.user['email'] }}" disabled="disabled"
+                   class="form-control" placeholder="Email"/>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="amazon_id" class="col-sm-2 control-label">Amazon ID</label>
+        <div class="col-sm-10">
+            <input id="amazon_id" name="amazon_id" value="{{ g.user['amazon_id'] }}" disabled="disabled"
+                   class="form-control" placeholder="Amazon ID"/>
+        </div>
+    </div>
+
+    <div class="form-group">
+        <label for="user_scope_uuid" class="col-sm-2 control-label">User Scope UUID</label>
+        <div class="col-sm-10">
+            <input id="user_scope_uuid" name="user_scope_uuid" value="{{ g.user['user_scope_uuid'] }}" disabled="disabled"
+                   class="form-control" placeholder="User Scope UUID">
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-default">Generate new User Scope UUID</button>
+
+</form>
 {% endblock %}
+
+{% endif %}

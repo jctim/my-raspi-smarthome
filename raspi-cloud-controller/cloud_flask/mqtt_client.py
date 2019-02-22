@@ -10,7 +10,7 @@ _LOGGER = logging.getLogger(__name__)
 _LOGGER.addHandler(flask_logging.default_handler)
 _LOGGER.setLevel(logging.DEBUG)
 
-_mqtt_client: Optional[mqtt.Client] = None  # TODO a global app context for objects like this
+_mqtt_client: Optional[mqtt.Client] = None  # TODO make an instance at the beginning
 
 
 def init_app(app: Flask):

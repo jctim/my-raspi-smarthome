@@ -1,6 +1,7 @@
 import os
 
 from flask import Flask
+from flask_bootstrap import Bootstrap
 
 from . import api, user, thing, db, mqtt_client
 
@@ -30,6 +31,7 @@ def create_app(test_config=None):
 
     db.init_app(app)
     mqtt_client.init_app(app)
+    Bootstrap(app)
     app.register_blueprint(user.bp)
     app.register_blueprint(thing.bp)
     app.register_blueprint(api.bp)

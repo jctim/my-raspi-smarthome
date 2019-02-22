@@ -1,31 +1,82 @@
-<!doctype html>
-<title>{% block title %}{% endblock %} - My Raspi Home</title>
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-<nav>
-  <h1>Cloud Controller</h1>
-  <ul>
-    {% if g.user %}
-    <li><span>{{ g.user['username'] }}</span></li>
-    <li><a href="{{ url_for('thing.thing_list') }}" id="things">Things</a></li>
-    <li><a href="{{ url_for('user.profile') }}" id="profile">Profile</a></li>
-    <li><a href="{{ url_for('user.logout') }}" id="logout">Log Out</a></li>
-      {% else %}
-    <li><a href="{{ url_for('user.login') }}">Log In</a></li>
-      {% endif %}
-  </ul>
-</nav>
-<section class="content">
-  <header>
-    {% block header %}{% endblock %}
-  </header>
-  {% for message in get_flashed_messages() %}
-  <div class="flash">{{ message }}</div>
-  {% endfor %}
-  {% block content %}{% endblock %}
-</section>
+{% extends 'bootstrap/base.html' %}
 
+{% block title %}My Raspi Home Cloud Controller{% endblock %}
+
+{% block head %}
+{{super()}}
+{% endblock %}
+
+{% block navbar %}
+<nav class="navbar navbar-default">
+    <div class="container-fluid">
+        <!-- Brand and toggle get grouped for better mobile display -->
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">
+                <span class="glyphicon glyphicon-cloud" aria-hidden="true"></span>
+                <span>Cloud Controller</span>
+            </a>
+        </div>
+
+        <!-- Collect the nav links -->
+        <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+            <ul class="nav navbar-nav">
+                {% if g.user %}
+                <li class="{{ 'active' if request.path.startswith('/thing') }}">
+                    <a href="{{ url_for('thing.thing_list') }}" id="things">
+                        <span class="glyphicon glyphicon-tasks" aria-hidden="true"></span>
+                        <span>Things</span>
+                    </a>
+                </li>
+                <li class="{{ 'active' if request.path.startswith('/user') }}">
+                    <a href="{{ url_for('user.profile') }}" id="profile">
+                        <span class="glyphicon glyphicon-user" aria-hidden="true"></span>
+                        <span>User</span></a>
+                </li>
+                <li>
+                    <a href="{{ url_for('user.logout') }}" id="logout">
+                        <span class="glyphicon glyphicon-off" aria-hidden="true"></span>
+                        <span>Log Out</span>
+                    </a>
+                </li>
+                {% else %}
+                <li class="active">
+                    <a href="{{ url_for('user.login') }}">
+                        <span class="glyphicon glyphicon-off" aria-hidden="true"></span>
+                        <span>Log In</span>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </div><!-- /.navbar-collapse -->
+    </div><!-- /.container-fluid -->
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>{% block header %} {% endblock %}</h1>
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            {% block navpills %} {% endblock %}
+        </div>
+        <div class="panel-body">
+            {% block container %} {% endblock %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block scripts %}
+{{super()}}
 {% if g.user %}
-<!-- Amazon-related scripts -->
+<!-- Amazon Logout scripts -->
 <script type="text/javascript">
   window.onAmazonLoginReady = function () {
     amazon.Login.setClientId('{{ config["AMAZON_CLIENT_ID"] }}');
@@ -34,5 +85,7 @@
   document.getElementById('logout').onclick = function () {
     amazon.Login.logout();
   };
+
 </script>
 {% endif %}
+{% endblock %}
