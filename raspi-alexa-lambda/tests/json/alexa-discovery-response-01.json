@@ -1,0 +1,100 @@
+{
+  "event": {
+    "header": {
+      "messageId": "16120434-3e91-4b65-a2ee-f30cbb5fa1f6",
+      "name": "Discover.Response",
+      "namespace": "Alexa.Discovery",
+      "payloadVersion": "3"
+    },
+    "payload": {
+      "endpoints": [
+        {
+          "endpointId": "tv-01",
+          "manufacturerName": "Manufacturer",
+          "friendlyName": "My TV",
+          "description": "TV controlled by Raspi",
+          "displayCategories": [
+            "TV"
+          ],
+          "capabilities": [
+            {
+              "type": "AlexaInterface",
+              "interface": "Alexa.EndpointHealth",
+              "version": "3",
+              "properties": {
+                "supported": [
+                  {
+                    "name": "connectivity"
+                  }
+                ],
+                "proactivelyReported": true,
+                "retrievable": true
+              }
+            },
+            {
+              "type": "AlexaInterface",
+              "interface": "Alexa.InputController",
+              "version": "3",
+              "inputs": [
+                {
+                  "name": "HDMI 1"
+                },
+                {
+                  "name": "HDMI 2"
+                },
+                {
+                  "name": "HDMI 3"
+                },
+                {
+                  "name": "HDMI 4"
+                }
+              ]
+            },
+            {
+              "type": "AlexaInterface",
+              "interface": "Alexa.PlaybackController",
+              "version": "3",
+              "supportedOperations": [
+                "Play",
+                "Pause",
+                "Stop"
+              ]
+            },
+            {
+              "type": "AlexaInterface",
+              "interface": "Alexa.PowerController",
+              "version": "3",
+              "properties": {
+                "supported": [
+                  {
+                    "name": "powerState"
+                  }
+                ],
+                "proactivelyReported": true,
+                "retrievable": true
+              }
+            },
+            {
+              "type": "AlexaInterface",
+              "interface": "Alexa.Speaker",
+              "version": "3",
+              "properties": {
+                "supported": [
+                  {
+                    "name": "volume"
+                  },
+                  {
+                    "name": "muted"
+                  }
+                ],
+                "proactivelyReported": true,
+                "retrievable": true
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
+

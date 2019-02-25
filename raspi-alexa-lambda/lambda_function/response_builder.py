@@ -1,11 +1,31 @@
 import json
+import logging
 import uuid
-from typing import Any, Dict, Union
+from typing import Any, Dict, Union, List
 
 from error_type import ErrorType
 
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 
-def build_discovery_response(endpoints: Dict[str, Any]) -> Dict[str, Any]:
+
+def build_auth_response() -> Dict[str, Any]:
+    response = {
+        "event": {
+            "header": {
+                "namespace": "Alexa.Authorization",
+                "name": "AcceptGrant.Response",
+                "payloadVersion": "3",
+                "messageId": _get_uuid(),
+            },
+            "payload": {}
+        }
+    }
+    logger.debug("Alexa.Authorization Response: %s", json.dumps(response))
+    return response
+
+
+def build_discovery_response(endpoints: List[Dict[str, Any]]) -> Dict[str, Any]:
     header = {
         "namespace": "Alexa.Discovery",
         "name": "Discover.Response",
@@ -20,7 +40,7 @@ def build_discovery_response(endpoints: Dict[str, Any]) -> Dict[str, Any]:
             }
         }
     }
-    print("[DEBUG]", "Alexa.Discovery Response:", json.dumps(response))
+    logger.debug("Alexa.Discovery Response: %s", json.dumps(response))
     return response
 
 
@@ -38,7 +58,7 @@ def build_power_controller_response(power_value: str, time: str,
             "payload": {}
         }
     }
-    print("[DEBUG]", "Alexa.PowerController Response:", json.dumps(response))
+    logger.debug("Alexa.PowerController Response: %s", json.dumps(response))
     return response
 
 
@@ -56,7 +76,7 @@ def build_input_controller_response(input_value: str, time: str,
             "payload": {}
         }
     }
-    print("[DEBUG]", "Alexa.InputController Response:", json.dumps(response))
+    logger.debug("Alexa.InputController Response: %s", json.dumps(response))
     return response
 
 
@@ -77,7 +97,7 @@ def build_speaker_controller_response(volume_value: str, muted_value: str, time:
             "payload": {}
         }
     }
-    print("[DEBUG]", "Alexa.InputController Response:", json.dumps(response))
+    logger.debug("Alexa.InputController Response: %s", json.dumps(response))
     return response
 
 
@@ -95,7 +115,45 @@ def build_error_response(error_type: ErrorType, error_message: str,
             }
         }
     }
-    print("[DEBUG]", "Alexa.ErrorResponse:", json.dumps(response))
+    logger.debug("Alexa.ErrorResponse: %s", json.dumps(response))
+    return response
+
+
+def build_error_auth_response(error_type: ErrorType, error_message: str) -> Dict[str, Any]:
+    response = {
+        "event": {
+            "header": {
+                "namespace": "Alexa.Authorization",
+                "name": "ErrorResponse",
+                "payloadVersion": "3",
+                "messageId": _get_uuid(),
+            },
+            "payload": {
+                "type": error_type.name,
+                "message": error_message
+            }
+        }
+    }
+    logger.debug("Alexa.AuthErrorResponse: %s", json.dumps(response))
+    return response
+
+
+def build_error_common_response(error_type: ErrorType, error_message: str) -> Dict[str, Any]:
+    response = {
+        "event": {
+            "header": {
+                "namespace": "Alexa",
+                "name": "ErrorResponse",
+                "payloadVersion": "3",
+                "messageId": _get_uuid(),
+            },
+            "payload": {
+                "type": error_type.name,
+                "message": error_message
+            }
+        }
+    }
+    logger.debug("Alexa.CommonErrorResponse: %s", json.dumps(response))
     return response
 
 
