@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 
 def build_discovery_endpoint(endpoint: Dict[str, Any]) -> Dict[str, Any]:
@@ -20,7 +20,7 @@ def build_discovery_endpoint(endpoint: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
-def _build_capability(capability, props) -> Dict[str, Any]:
+def _build_capability(capability: str, props: List[str]) -> Dict[str, Any]:
     if capability in ['Alexa.PowerController',
                       'Alexa.Speaker',
                       'Alexa.EndpointHealth']:

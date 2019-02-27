@@ -7,7 +7,7 @@ env:
     - CHANGED_FILES="$(git diff --name-only $TRAVIS_COMMIT_RANGE --)"
   matrix:
     - PROJ_NAME=raspi-cloud-controller    MYPY_CMD="mypy --ignore-missing-imports -p cloud_flask"
-    - PROJ_NAME=raspi-alexa-lambda        MYPY_CMD="mypy --ignore-missing-imports lambda_function"
+    - PROJ_NAME=raspi-alexa-lambda        MYPY_CMD="mypy --ignore-missing-imports -p lambda_function"
     - PROJ_NAME=raspi-hardware-controller MYPY_CMD="mypy --ignore-missing-imports -p tv_controller"
 install:
   - echo $CHANGED_FILES

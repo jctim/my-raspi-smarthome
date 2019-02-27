@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from typing import Any, Dict, List
 
 from .endpoint_builder import build_discovery_endpoint
 from .error_type import ErrorType
@@ -32,31 +33,28 @@ SPEAKER_URL = HOST + '/api/speaker/{0}/{1}'
 
 # TODO: Reports - health etc.
 
-def lambda_handler(request, context):
-    logger.debug("%s request: %s", request['directive']['header']['namespace'], json.dumps(request))
+def lambda_handler(request: Dict[str, Any], _context: Any) -> Dict[str, Any]:
+    request_namespace = request['directive']['header']['namespace']
+    request_name = request['directive']['header']['name']
+    logger.debug("%s request: %s", request_namespace, json.dumps(request))
 
-    if request['directive']['header']['namespace'] == 'Alexa.Authorization' and (
-            request['directive']['header']['name'] == 'AcceptGrant'):
+    if request_namespace == 'Alexa.Authorization' and request_name == 'AcceptGrant':
         return handle_auth(request)
 
-    if request['directive']['header']['namespace'] == 'Alexa.Discovery' and (
-            request['directive']['header']['name'] == 'Discover'):
+    if request_namespace == 'Alexa.Discovery' and request_name == 'Discover':
         return handle_discovery(request)
 
-    if request['directive']['header']['namespace'] == 'Alexa.PowerController' and (
-            request['directive']['header']['name'] == 'TurnOn' or
-            request['directive']['header']['name'] == 'TurnOff'):
-        return handle_power_control(request)
+    if request_namespace == 'Alexa.PowerController' and (request_name == 'TurnOn' or
+                                                         request_name == 'TurnOff'):
+        return handle_power_control(request, request_name)
 
-    if request['directive']['header']['namespace'] == 'Alexa.InputController' and (
-            request['directive']['header']['name'] == 'SelectInput'):
-        return handle_input_control(request)
+    if request_namespace == 'Alexa.InputController' and request_name == 'SelectInput':
+        return handle_input_control(request, request_name)
 
-    if request['directive']['header']['namespace'] == 'Alexa.Speaker' and (
-            request['directive']['header']['name'] == 'SetVolume' or
-            request['directive']['header']['name'] == 'AdjustVolume' or
-            request['directive']['header']['name'] == 'SetMute'):
-        return handle_speaker_control(request)
+    if request_namespace == 'Alexa.Speaker' and (request_name == 'SetVolume' or
+                                                 request_name == 'AdjustVolume' or
+                                                 request_name == 'SetMute'):
+        return handle_speaker_control(request, request_name)
 
     logger.error("Unsupported Request")
     if 'correlationToken' in request['directive']['header'] and 'endpoint' in request['directive']:
@@ -67,7 +65,7 @@ def lambda_handler(request, context):
     return build_error_common_response(ErrorType.INTERNAL_ERROR, 'Unsupported Operation')
 
 
-def handle_auth(request):
+def handle_auth(request: Dict[str, Any]) -> Dict[str, Any]:
     api_response = requests.post(AUTH_URL, json={
         'messageId': request['directive']['header']['messageId'],
         'code': request['directive']['payload']['grant']['code'],
@@ -80,21 +78,20 @@ def handle_auth(request):
     return build_auth_response()
 
 
-def handle_discovery(request):
+def handle_discovery(request: Dict[str, Any]) -> Dict[str, Any]:
     api_response = requests.post(DISCOVERY_URL, json={
         'messageId': request['directive']['header']['messageId'],
         'accessToken': request['directive']['payload']['scope']['token']
     })
 
-    endpoints = []
+    endpoints: List[Any] = []
     if api_response.status_code == 200 and 'endpoints' in api_response.json():
         endpoints = [build_discovery_endpoint(endpoint) for endpoint in api_response.json()['endpoints']]
 
     return build_discovery_response(endpoints)
 
 
-def handle_power_control(request):
-    command = request['directive']['header']['name']
+def handle_power_control(request: Dict[str, Any], command: str) -> Dict[str, Any]:
     correlation_token = request['directive']['header']['correlationToken']
     endpoint_id = request['directive']['endpoint']['endpointId']
 
@@ -113,7 +110,7 @@ def handle_power_control(request):
                                            correlation_token, endpoint_id)
 
 
-def handle_input_control(request):
+def handle_input_control(request: Dict[str, Any], _command: str) -> Dict[str, Any]:
     input_name = request['directive']['payload']['input']
     correlation_token = request['directive']['header']['correlationToken']
     endpoint_id = request['directive']['endpoint']['endpointId']
@@ -133,8 +130,7 @@ def handle_input_control(request):
                                            correlation_token, endpoint_id)
 
 
-def handle_speaker_control(request):
-    command = request['directive']['header']['name']
+def handle_speaker_control(request: Dict[str, Any], command: str) -> Dict[str, Any]:
     if 'volume' in request['directive']['payload']:
         value = request['directive']['payload']['volume']
     elif 'mute' in request['directive']['payload']:
