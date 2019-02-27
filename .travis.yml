@@ -2,20 +2,29 @@ language: python
 dist: xenial
 python:
   - 3.7.2
+  - 3.5.3
 env:
   global:
     - CHANGED_FILES="$(git diff --name-only $TRAVIS_COMMIT_RANGE --)"
   matrix:
-    - PROJ_NAME=raspi-cloud-controller    MYPY_CMD="mypy --ignore-missing-imports -p cloud_flask"
-    - PROJ_NAME=raspi-alexa-lambda        MYPY_CMD="mypy --ignore-missing-imports -p lambda_function"
-    - PROJ_NAME=raspi-hardware-controller MYPY_CMD="mypy --ignore-missing-imports -p tv_controller"
+    - PROJ_NAME=raspi-cloud-controller    PROJ_ARTIFACT=cloud_flask
+    - PROJ_NAME=raspi-alexa-lambda        PROJ_ARTIFACT=lambda_function
+    - PROJ_NAME=raspi-hardware-controller PROJ_ARTIFACT=tv_controller
+matrix:
+  exclude:
+    - python: 3.5.3
+      env: PROJ_NAME=raspi-cloud-controller    PROJ_ARTIFACT=cloud_flask
+    - python: 3.5.3
+      env: PROJ_NAME=raspi-alexa-lambda        PROJ_ARTIFACT=lambda_function
+    - python: 3.7.2
+      env: PROJ_NAME=raspi-hardware-controller PROJ_ARTIFACT=tv_controller
 install:
   - echo $CHANGED_FILES
   - cd $PROJ_NAME
   - pip install mypy==0.650
   - pip install -r requirements.txt
-script: 
-  - $MYPY_CMD
+script:
+  - mypy --ignore-missing-imports -p $PROJ_ARTIFACT
   - python3 -m unittest discover -p '*_test.py' -v -s tests
 jobs:
   include:
