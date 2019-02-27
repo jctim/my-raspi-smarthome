@@ -3,7 +3,7 @@ import logging
 import uuid
 from typing import Any, Dict, Union, List
 
-from error_type import ErrorType
+from .error_type import ErrorType
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)

@@ -2,7 +2,7 @@ import unittest
 
 from parameterized import parameterized
 
-from endpoint_builder import build_discovery_endpoint
+from lambda_function.endpoint_builder import build_discovery_endpoint
 
 
 class EndpointBuilderTest(unittest.TestCase):

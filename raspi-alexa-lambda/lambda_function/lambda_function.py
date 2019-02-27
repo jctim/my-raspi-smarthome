@@ -2,16 +2,16 @@ import json
 import logging
 import os
 
-from endpoint_builder import build_discovery_endpoint
-from error_type import ErrorType
-from response_builder import (build_auth_response,
-                              build_discovery_response,
-                              build_input_controller_response,
-                              build_power_controller_response,
-                              build_speaker_controller_response,
-                              build_error_auth_response,
-                              build_error_common_response,
-                              build_error_response)
+from .endpoint_builder import build_discovery_endpoint
+from .error_type import ErrorType
+from .response_builder import (build_auth_response,
+                               build_discovery_response,
+                               build_input_controller_response,
+                               build_power_controller_response,
+                               build_speaker_controller_response,
+                               build_error_auth_response,
+                               build_error_common_response,
+                               build_error_response)
 
 try:
     from botocore.vendored import requests  # type:ignore

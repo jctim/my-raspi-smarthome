@@ -42,7 +42,7 @@ jobs:
       env: STAGE=lambda PROJ_NAME=raspi-alexa-lambda
       if: type = api OR commit_message =~ env(PROJ_NAME)
       install: skip
-      before_script: cd $PROJ_NAME/lambda_function
+      before_script: cd $PROJ_NAME
       script: skip
       deploy:
         - provider: lambda
@@ -50,7 +50,7 @@ jobs:
           region: "us-east-1"
           role: "arn:aws:iam::881012516071:role/MyRaspberryPi-Lambda"
           runtime: "python3.7"
-          module_name: "lambda_function"
+          module_name: "lambda_function.lambda_function"
           handler_name: "lambda_handler"
           access_key_id:
             secure: "pLm5sDgr7zEww4OSwTCxltLpkvR1Fe2iWoGyRUJiZQX4yZpYlkjSX910wXl+ch0iQZ1C3QvbRaXJOMlwVEZ/q3Hh4I1oKrmGwb56PsWz39b0/piexitT7dAkpK3G5AX0+1sEYUYzwQRjrb4SrtnPRDky+m+NYcbVuGl1A3gVeMfUGEjieHxLQekqUhhQ4JXXwa+dB0av7e1+LkPS/uv/QzsPfgorlv2c2NDQuSLo+AzD+bA8Cbs+BB4Hv4ITVEV0nGqKmYuJxxbJR18DQpQTx0ICkwfZc9HkDtHvE1yCKiojPhjC7t5MzaJnyRwjspAw16QyBTpZlk/YF4NBLrg9Hb5BKvVyUxTcrU3BPLrkorI4F69RJAOB1qQkN59Rnr8wPNLM6EV0h862k8gbLHqoAKlT9H7TFddHbgHio7QROCs+1C8PX3+vvBne2YedvgC4fLLcY4TMg0J2E/VyiqTikq3umSo5ugiFZMFP5OOszrxH9YpSUUG4dv7pZW0o8Zbbkt+9K+XnYLrPbEQCgyM+ZHAT9l66A7/oIasrYE5xxcHsxSOuCGuYTlpsChJPthLt9XEWHz033AKGMWK4xePjlqlz3siW4EfqiYaRwRfJ+1P7rMEmV/yO5YlXfZOQbv+PXt2OR9sWcvMhXrickQxUEn7DLXwVnEuTeeYICSflcjo="
@@ -61,7 +61,7 @@ jobs:
           region: "eu-west-1"
           role: "arn:aws:iam::881012516071:role/MyRaspberryPi-Lambda"
           runtime: "python3.7"
-          module_name: "lambda_function"
+          module_name: "lambda_function.lambda_function"
           handler_name: "lambda_handler"
           access_key_id:
             secure: "pLm5sDgr7zEww4OSwTCxltLpkvR1Fe2iWoGyRUJiZQX4yZpYlkjSX910wXl+ch0iQZ1C3QvbRaXJOMlwVEZ/q3Hh4I1oKrmGwb56PsWz39b0/piexitT7dAkpK3G5AX0+1sEYUYzwQRjrb4SrtnPRDky+m+NYcbVuGl1A3gVeMfUGEjieHxLQekqUhhQ4JXXwa+dB0av7e1+LkPS/uv/QzsPfgorlv2c2NDQuSLo+AzD+bA8Cbs+BB4Hv4ITVEV0nGqKmYuJxxbJR18DQpQTx0ICkwfZc9HkDtHvE1yCKiojPhjC7t5MzaJnyRwjspAw16QyBTpZlk/YF4NBLrg9Hb5BKvVyUxTcrU3BPLrkorI4F69RJAOB1qQkN59Rnr8wPNLM6EV0h862k8gbLHqoAKlT9H7TFddHbgHio7QROCs+1C8PX3+vvBne2YedvgC4fLLcY4TMg0J2E/VyiqTikq3umSo5ugiFZMFP5OOszrxH9YpSUUG4dv7pZW0o8Zbbkt+9K+XnYLrPbEQCgyM+ZHAT9l66A7/oIasrYE5xxcHsxSOuCGuYTlpsChJPthLt9XEWHz033AKGMWK4xePjlqlz3siW4EfqiYaRwRfJ+1P7rMEmV/yO5YlXfZOQbv+PXt2OR9sWcvMhXrickQxUEn7DLXwVnEuTeeYICSflcjo="
